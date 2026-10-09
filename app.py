@@ -679,13 +679,18 @@ def get_budget_recommendation():
     cursor.execute("SELECT * FROM budgets WHERE month_year = 'default' LIMIT 1")
     budget_row = cursor.fetchone()
     if not budget_row:
-        monthly_budget = 12000000.0
-        expected_income = 18000000.0
+        income_type = 'variable'
+        runway_target_months = 6.0
+        monthly_budget = 15000000.0
+        expected_income = 0.0
         savings_target_pct = 25.0
     else:
-        monthly_budget = float(budget_row['monthly_budget'])
-        expected_income = float(budget_row['expected_income'])
-        savings_target_pct = float(budget_row['savings_target_pct'])
+        b_dict = dict(budget_row)
+        income_type = b_dict.get('income_type') or 'variable'
+        runway_target_months = float(b_dict.get('runway_target_months') or 6.0)
+        monthly_budget = float(b_dict.get('monthly_budget', 15000000.0))
+        expected_income = float(b_dict.get('expected_income', 0.0))
+        savings_target_pct = float(b_dict.get('savings_target_pct', 25.0))
         
     cursor.execute('''
         SELECT SUM(
@@ -765,61 +770,130 @@ def get_budget_recommendation():
 
     conn.close()
     
-    # Net available variable budget after accounting for subscriptions and actual expenses
-    remaining_month_gross = monthly_budget - actual_month_expense
-    # Discretionary budget remaining after reserving for upcoming fixed subscriptions
-    remaining_month_safe = max(0.0, remaining_month_gross - unpaid_subs_month)
-
-    # Smart Daily Safe Allowance for remaining days
-    if remaining_month_safe > 0 and days_left_in_month > 0:
-        recommended_safe_daily = round(remaining_month_safe / days_left_in_month, 0)
-    else:
-        recommended_safe_daily = 0.0
-        
-    today_remaining_daily = max(0.0, recommended_safe_daily - actual_today_expense)
-    today_overspent_daily = max(0.0, actual_today_expense - recommended_safe_daily)
-
-    # Smart Weekly Allowance based on days remaining this week
-    days_left_in_week = max(1, 7 - today.weekday())
-    base_daily_budget = round(monthly_budget / days_in_month, 0)
-    base_weekly_budget = round(monthly_budget / (days_in_month / 7.0), 0)
-    remaining_weekly = max(0.0, min(remaining_month_safe, base_weekly_budget - actual_week_expense))
-    yearly_budget = monthly_budget * 12.0
-    remaining_yearly = yearly_budget - actual_year_expense
+    # Total liquid assets in all wallets
+    wallets = calculate_wallet_balances()
+    total_assets_vnd = sum(w['balance_vnd'] for w in wallets)
     
-    # Health HP based on discretionary pacing
-    variable_ceiling = max(1.0, monthly_budget - fixed_subscriptions)
-    hp_percent = max(0, min(100, int((remaining_month_safe / variable_ceiling) * 100)))
-        
-    # Dynamic 50/30/20 based on user's configured expected income & savings_target_pct
-    income_base = expected_income if expected_income > 0 else (monthly_budget / 0.75)
-    rule_savings = round(income_base * (savings_target_pct / 100.0), 0)
-    rule_needs = round(income_base * 0.50, 0)
-    rule_wants = round(max(0.0, income_base - rule_needs - rule_savings), 0)
+    # Monthly burn rate baseline:
+    monthly_burn = max(monthly_budget, fixed_subscriptions) if monthly_budget > 0 else max(10000000.0, fixed_subscriptions)
+    runway_months = round(total_assets_vnd / max(monthly_burn, 1000000.0), 1) if total_assets_vnd > 0 else 0.0
 
-    # Intelligent NPC Advice
-    status_level = "safe"
-    if remaining_month_safe <= 0 or hp_percent < 20:
-        status_level = "danger"
-        npc_avatar = "💀"
-        advice_title = "BÁO ĐỘNG NGÂN SÁCH!"
-        advice_text = f"Cảnh báo: Bạn chỉ còn {remaining_month_safe:,.0f} ₫ cho {days_left_in_month} ngày còn lại (Đã dự phòng {unpaid_subs_month:,.0f} ₫ dịch vụ cố định). Cần dừng mọi chi tiêu tùy ý!"
-    elif actual_today_expense > recommended_safe_daily and recommended_safe_daily > 0:
-        status_level = "warning"
-        npc_avatar = "⚔️"
-        advice_title = "VƯỢT HẠN MỨC HÔM NAY"
-        advice_text = f"Hôm nay bạn đã chi {actual_today_expense:,.0f} ₫ (vượt {today_overspent_daily:,.0f} ₫ so với định mức ngày {recommended_safe_daily:,.0f} ₫). Hãy tiết chế cho các ngày tới nhé!"
-    elif hp_percent > 65:
-        status_level = "excellent"
-        npc_avatar = "🛡️"
-        advice_title = "CHI TIÊU RẤT AN TOÀN!"
-        advice_text = f"Hôm nay còn {today_remaining_daily:,.0f} ₫ trong hạn mức an toàn {recommended_safe_daily:,.0f} ₫ ({today_remaining_daily/rates['EUR_VND']:.2f} € / {today_remaining_daily/rates['USD_VND']:.2f} $). Tiếp tục giữ vững phong độ nhé!"
+    days_left_in_week = max(1, 7 - today.weekday())
+    base_daily_budget = round(monthly_burn / days_in_month, 0)
+    base_weekly_budget = round(monthly_burn / (days_in_month / 7.0), 0)
+
+    # Asset Allocation Calculation
+    emergency_target_vnd = monthly_burn * runway_target_months
+    emergency_pct = round(min(100.0, (total_assets_vnd / max(emergency_target_vnd, 1.0)) * 100.0), 1) if total_assets_vnd > 0 else 0.0
+    free_capital_vnd = max(0.0, total_assets_vnd - emergency_target_vnd)
+
+    if income_type == 'variable':
+        # === VARIABLE / UNSTABLE INCOME EVALUATION (RUNWAY & LIQUID ASSET BUFFER) ===
+        # Health HP is evaluated on the survival runway ratio
+        runway_ratio = runway_months / max(runway_target_months, 1.0)
+        if runway_ratio >= 2.0:
+            hp_percent = 100
+        elif runway_ratio >= 1.0:
+            hp_percent = min(99, int(85 + (runway_ratio - 1.0) * 14))
+        elif runway_ratio >= 0.5:
+            hp_percent = int(65 + (runway_ratio - 0.5) / 0.5 * 20)
+        elif runway_ratio >= 0.25:
+            hp_percent = int(40 + (runway_ratio - 0.25) / 0.25 * 24)
+        else:
+            hp_percent = max(10, int(runway_ratio / 0.25 * 39))
+
+        # Reward surplus cashflow if income arrived this month
+        if actual_month_income > actual_month_expense and actual_month_income > 0:
+            hp_percent = min(100, hp_percent + 5)
+
+        # Spending limits for variable income:
+        # Augment allowed budget with any real income arrived this month
+        effective_month_budget = monthly_burn + actual_month_income
+        remaining_month_gross = effective_month_budget - actual_month_expense
+        remaining_month_safe = max(0.0, remaining_month_gross - unpaid_subs_month)
+
+        if remaining_month_safe > 0 and days_left_in_month > 0:
+            recommended_safe_daily = round(remaining_month_safe / days_left_in_month, 0)
+        else:
+            # Fallback daily pace from emergency fund if this month's budget ceiling was reached
+            recommended_safe_daily = round(total_assets_vnd / (runway_target_months * 30.0), 0) if total_assets_vnd > 0 else 0.0
+
+        today_remaining_daily = max(0.0, recommended_safe_daily - actual_today_expense)
+        today_overspent_daily = max(0.0, actual_today_expense - recommended_safe_daily)
+        remaining_weekly = max(0.0, min(remaining_month_safe, recommended_safe_daily * days_left_in_week))
+
+        # NPC Advice tailored for Freelancers / Variable Income
+        if hp_percent >= 85:
+            status_level = "excellent"
+            npc_avatar = "🛡️"
+            advice_title = "QUỸ DỰ TRỮ CỰC KỲ VỮNG VÀNG!"
+            if today_remaining_daily > 0:
+                advice_text = f"Tài sản khả dụng ({total_assets_vnd:,.0f} ₫) đủ bảo đảm sinh tồn trong {runway_months} tháng (vượt xa mục tiêu {runway_target_months:,.0f} tháng). Hôm nay còn {today_remaining_daily:,.0f} ₫ trong mức an toàn!"
+            else:
+                advice_text = f"Tài sản hiện có bảo đảm an toàn {runway_months} tháng. Hôm nay bạn đã chi {actual_today_expense:,.0f} ₫ (vượt định mức ngày {recommended_safe_daily:,.0f} ₫), hãy tiết chế ngày mai nhé!"
+        elif hp_percent >= 65:
+            status_level = "safe"
+            npc_avatar = "⚔️"
+            advice_title = "TÀI CHÍNH ỔN ĐỊNH"
+            advice_text = f"Quỹ dự phòng duy trì được {runway_months} tháng (Mục tiêu: {runway_target_months:,.0f} tháng). Hôm nay nên chi tối đa {today_remaining_daily:,.0f} ₫ ({today_remaining_daily/rates['EUR_VND']:.2f} €) để bảo vệ quỹ sinh tồn."
+        elif hp_percent >= 40:
+            status_level = "warning"
+            npc_avatar = "⚠️"
+            advice_title = "CẦN CHÚ Ý TIẾT KIỆM"
+            advice_text = f"Quỹ sinh tồn còn {runway_months} tháng (Thấp hơn mục tiêu {runway_target_months:,.0f} tháng). Hãy thắt chặt chi tiêu và ưu tiên tạo thêm dòng tiền thu nhập mới."
+        else:
+            status_level = "danger"
+            npc_avatar = "💀"
+            advice_title = "BÁO ĐỘNG QUỸ DỰ TRỮ!"
+            advice_text = f"Cảnh báo: Tài sản chỉ còn đủ duy trì trong {runway_months} tháng! Cần dừng ngay các khoản chi ngoài lề và cắt giảm tối đa chi phí sinh hoạt."
+
+        rule_needs = monthly_burn * 0.50
+        rule_wants = monthly_burn * 0.30
+        rule_savings = monthly_burn * 0.20
+
     else:
-        status_level = "warning"
-        npc_avatar = "⚔️"
-        advice_title = "CẦN CHÚ Ý CHI TIÊU"
-        advice_text = f"Hôm nay nên chi trong khoảng {today_remaining_daily:,.0f} ₫ ({today_remaining_daily/rates['EUR_VND']:.2f} €) để đảm bảo không chạm đáy ngân sách cuối tháng."
-        
+        # === FIXED SALARY / REGULAR INCOME MODE ===
+        remaining_month_gross = monthly_budget - actual_month_expense
+        remaining_month_safe = max(0.0, remaining_month_gross - unpaid_subs_month)
+
+        if remaining_month_safe > 0 and days_left_in_month > 0:
+            recommended_safe_daily = round(remaining_month_safe / days_left_in_month, 0)
+        else:
+            recommended_safe_daily = 0.0
+
+        today_remaining_daily = max(0.0, recommended_safe_daily - actual_today_expense)
+        today_overspent_daily = max(0.0, actual_today_expense - recommended_safe_daily)
+        remaining_weekly = max(0.0, min(remaining_month_safe, base_weekly_budget - actual_week_expense))
+
+        variable_ceiling = max(1.0, monthly_budget - fixed_subscriptions)
+        hp_percent = max(0, min(100, int((remaining_month_safe / variable_ceiling) * 100)))
+
+        income_base = expected_income if expected_income > 0 else (monthly_budget / 0.75)
+        rule_savings = round(income_base * (savings_target_pct / 100.0), 0)
+        rule_needs = round(income_base * 0.50, 0)
+        rule_wants = round(max(0.0, income_base - rule_needs - rule_savings), 0)
+
+        if remaining_month_safe <= 0 or hp_percent < 20:
+            status_level = "danger"
+            npc_avatar = "💀"
+            advice_title = "BÁO ĐỘNG NGÂN SÁCH!"
+            advice_text = f"Cảnh báo: Bạn chỉ còn {remaining_month_safe:,.0f} ₫ cho {days_left_in_month} ngày còn lại. Cần dừng mọi chi tiêu tùy ý!"
+        elif actual_today_expense > recommended_safe_daily and recommended_safe_daily > 0:
+            status_level = "warning"
+            npc_avatar = "⚔️"
+            advice_title = "VƯỢT HẠN MỨC HÔM NAY"
+            advice_text = f"Hôm nay bạn đã chi {actual_today_expense:,.0f} ₫ (vượt {today_overspent_daily:,.0f} ₫ định mức ngày). Hãy tiết chế cho các ngày tới nhé!"
+        elif hp_percent > 65:
+            status_level = "excellent"
+            npc_avatar = "🛡️"
+            advice_title = "CHI TIÊU RẤT AN TOÀN!"
+            advice_text = f"Hôm nay còn {today_remaining_daily:,.0f} ₫ trong hạn mức an toàn {recommended_safe_daily:,.0f} ₫. Tiếp tục giữ vững phong độ nhé!"
+        else:
+            status_level = "warning"
+            npc_avatar = "⚔️"
+            advice_title = "CẦN CHÚ Ý CHI TIÊU"
+            advice_text = f"Hôm nay nên chi trong khoảng {today_remaining_daily:,.0f} ₫ ({today_remaining_daily/rates['EUR_VND']:.2f} €) để đảm bảo không chạm đáy ngân sách."
+
     return jsonify({
         'success': True,
         'current_date': today_str,
@@ -827,18 +901,23 @@ def get_budget_recommendation():
         'day_of_month': day,
         'days_left_in_month': days_left_in_month,
         'settings': {
+            'income_type': income_type,
+            'runway_target_months': runway_target_months,
             'expected_income': expected_income,
             'monthly_budget': monthly_budget,
+            'monthly_burn': monthly_burn,
             'savings_target_pct': savings_target_pct,
             'fixed_subscriptions': fixed_subscriptions,
-            'unpaid_subs_month': unpaid_subs_month
+            'unpaid_subs_month': unpaid_subs_month,
+            'total_assets_vnd': total_assets_vnd
         },
         'actuals': {
             'today_expense_vnd': actual_today_expense,
             'week_expense_vnd': actual_week_expense,
             'month_expense_vnd': actual_month_expense,
             'month_income_vnd': actual_month_income,
-            'year_expense_vnd': actual_year_expense
+            'year_expense_vnd': actual_year_expense,
+            'net_month_cashflow_vnd': actual_month_income - actual_month_expense
         },
         'recommendations': {
             'safe_daily_vnd': recommended_safe_daily,
@@ -852,6 +931,14 @@ def get_budget_recommendation():
             'remaining_month_vnd': remaining_month_safe,
             'remaining_month_gross_vnd': remaining_month_gross,
             'remaining_weekly_vnd': remaining_weekly,
+            'runway_months': runway_months,
+            'runway_target_months': runway_target_months,
+            'asset_allocation': {
+                'total_assets_vnd': total_assets_vnd,
+                'emergency_target_vnd': emergency_target_vnd,
+                'emergency_pct': emergency_pct,
+                'free_capital_vnd': free_capital_vnd
+            },
             'rule_50_30_20': {
                 'needs': rule_needs,
                 'wants': rule_wants,
@@ -863,29 +950,37 @@ def get_budget_recommendation():
             'status_level': status_level,
             'npc_avatar': npc_avatar,
             'advice_title': advice_title,
-            'advice_text': advice_text
+            'advice_text': advice_text,
+            'runway_months': runway_months,
+            'runway_target_months': runway_target_months,
+            'runway_badge_text': f"🛡️ Dự trữ: {runway_months} tháng" if income_type == 'variable' else f"❤️ {hp_percent} HP",
+            'evaluation_mode': income_type
         }
     })
 
 @app.route('/api/budget/settings', methods=['POST'])
 def save_budget_settings():
     data = request.get_json(silent=True) or request.form.to_dict() or {}
-    expected_income = float(data.get('expected_income', 18000000))
-    monthly_budget = float(data.get('monthly_budget', 12000000))
+    income_type = data.get('income_type', 'variable')
+    if income_type not in ['variable', 'fixed']:
+        income_type = 'variable'
+    runway_target_months = float(data.get('runway_target_months', 6.0))
+    expected_income = float(data.get('expected_income', 0))
+    monthly_budget = float(data.get('monthly_budget', 15000000))
     savings_target_pct = float(data.get('savings_target_pct', 25))
     
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
         UPDATE budgets 
-        SET expected_income = ?, monthly_budget = ?, savings_target_pct = ?
+        SET income_type = ?, runway_target_months = ?, expected_income = ?, monthly_budget = ?, savings_target_pct = ?
         WHERE month_year = 'default'
-    ''', (expected_income, monthly_budget, savings_target_pct))
+    ''', (income_type, runway_target_months, expected_income, monthly_budget, savings_target_pct))
     if cursor.rowcount == 0:
         cursor.execute('''
-            INSERT INTO budgets (month_year, expected_income, monthly_budget, savings_target_pct)
-            VALUES ('default', ?, ?, ?)
-        ''', (expected_income, monthly_budget, savings_target_pct))
+            INSERT INTO budgets (month_year, income_type, runway_target_months, expected_income, monthly_budget, savings_target_pct)
+            VALUES ('default', ?, ?, ?, ?, ?)
+        ''', (income_type, runway_target_months, expected_income, monthly_budget, savings_target_pct))
     conn.commit()
     conn.close()
     return jsonify({'success': True, 'message': 'Đã lưu thiết lập ngân sách thành công!'})

@@ -10,9 +10,12 @@ let timelineChartInstance = null;
 let currentEditingTxId = null;
 let currentEditingSubId = null;
 let currentBudgetModalCurrency = currentCurrency;
+let currentBudgetIncomeType = 'variable';
 let savedBudgetVnd = {
-    expected_income: 18000000,
-    monthly_budget: 12000000,
+    income_type: 'variable',
+    runway_target_months: 6,
+    expected_income: 0,
+    monthly_budget: 15000000,
     savings_target_pct: 25
 };
 
@@ -528,6 +531,8 @@ async function loadBudgetHealth() {
         // Update HP Bar
         const hpInner = document.getElementById('hpBarInner');
         const hpText = document.getElementById('hpValueText');
+        const hpTitle = document.getElementById('hpTitleText');
+        const runwayBadge = document.getElementById('runwayBadge');
         const npcAvatar = document.getElementById('npcAvatar');
         const npcTitle = document.getElementById('npcAdviceTitle');
         const npcText = document.getElementById('npcAdviceText');
@@ -541,23 +546,62 @@ async function loadBudgetHealth() {
 
         if (hpText) hpText.textContent = `${health.hp_percent} / 100 HP`;
         if (npcAvatar) npcAvatar.textContent = health.npc_avatar;
+
+        const isVariableIncome = (settings.income_type === 'variable');
+
+        // Dynamic Title & Runway Badge
+        if (hpTitle) {
+            hpTitle.textContent = isVariableIncome ? t('health_title_runway') : t('health_title');
+        }
+
+        if (runwayBadge) {
+            if (isVariableIncome) {
+                runwayBadge.style.display = 'inline-flex';
+                const rw = recommendations.runway_months || 0;
+                const rwTarget = settings.runway_target_months || 6;
+                runwayBadge.textContent = health.runway_badge_text || `🛡️ Dự trữ: ${rw} tháng`;
+                if (rw >= rwTarget) {
+                    runwayBadge.style.background = 'rgba(0, 255, 102, 0.15)';
+                    runwayBadge.style.borderColor = 'var(--color-success)';
+                    runwayBadge.style.color = 'var(--color-success)';
+                } else if (rw >= 3) {
+                    runwayBadge.style.background = 'rgba(255, 204, 0, 0.15)';
+                    runwayBadge.style.borderColor = 'var(--color-warning)';
+                    runwayBadge.style.color = 'var(--color-warning)';
+                } else {
+                    runwayBadge.style.background = 'rgba(255, 51, 68, 0.15)';
+                    runwayBadge.style.borderColor = 'var(--color-danger)';
+                    runwayBadge.style.color = 'var(--color-danger)';
+                }
+            } else {
+                runwayBadge.style.display = 'none';
+            }
+        }
         
         // Multi-language NPC advice with exact currency format
         const safeDailyCurr = formatMoney(convertCurrency(recommendations.safe_daily_vnd, 'VND', currentCurrency), currentCurrency);
         const remMonthCurr = formatMoney(convertCurrency(recommendations.remaining_month_vnd, 'VND', currentCurrency), currentCurrency);
 
         if (npcTitle) {
-            if (health.status_level === 'excellent') npcTitle.textContent = t('status_safe');
-            else if (health.status_level === 'warning') npcTitle.textContent = t('status_warning');
-            else npcTitle.textContent = t('status_danger');
+            if (health.advice_title) {
+                npcTitle.textContent = health.advice_title;
+            } else {
+                if (health.status_level === 'excellent') npcTitle.textContent = t('status_safe');
+                else if (health.status_level === 'warning') npcTitle.textContent = t('status_warning');
+                else npcTitle.textContent = t('status_danger');
+            }
         }
         if (npcText) {
-            if (health.status_level === 'excellent') {
-                npcText.textContent = t('npc_advice_safe', { amount: safeDailyCurr });
-            } else if (health.status_level === 'warning') {
-                npcText.textContent = t('npc_advice_warning', { amount: safeDailyCurr });
+            if (isVariableIncome && health.advice_text) {
+                npcText.textContent = health.advice_text;
             } else {
-                npcText.textContent = t('npc_advice_danger', { rem: remMonthCurr, days: data.days_left_in_month || 1, amount: safeDailyCurr });
+                if (health.status_level === 'excellent') {
+                    npcText.textContent = t('npc_advice_safe', { amount: safeDailyCurr });
+                } else if (health.status_level === 'warning') {
+                    npcText.textContent = t('npc_advice_warning', { amount: safeDailyCurr });
+                } else {
+                    npcText.textContent = t('npc_advice_danger', { rem: remMonthCurr, days: data.days_left_in_month || 1, amount: safeDailyCurr });
+                }
             }
         }
 
@@ -576,10 +620,13 @@ async function loadBudgetHealth() {
         const bdRemWeek = document.getElementById('bdRemWeek');
         const bdRemMonth = document.getElementById('bdRemMonth');
         const bdFixedSub = document.getElementById('bdFixedSub');
+        const bdBreakdownTitle = document.getElementById('bdBreakdownTitle');
+        const bdRuleNeedsLabel = document.getElementById('bdRuleNeedsLabel');
         const bdRuleNeeds = document.getElementById('bdRuleNeeds');
+        const bdRuleWantsLabel = document.getElementById('bdRuleWantsLabel');
         const bdRuleWants = document.getElementById('bdRuleWants');
-        const bdRuleSavings = document.getElementById('bdRuleSavings');
         const bdRuleSavingsLabel = document.getElementById('bdRuleSavingsLabel');
+        const bdRuleSavings = document.getElementById('bdRuleSavings');
 
         const todaySafeRemaining = recommendations.today_remaining_vnd !== undefined 
             ? recommendations.today_remaining_vnd 
@@ -598,20 +645,60 @@ async function loadBudgetHealth() {
         if (bdRemMonth) bdRemMonth.textContent = formatMoney(convertCurrency(recommendations.remaining_month_vnd, 'VND', currentCurrency), currentCurrency);
         if (bdFixedSub) bdFixedSub.textContent = formatMoney(convertCurrency(settings.fixed_subscriptions, 'VND', currentCurrency), currentCurrency);
 
-        if (bdRuleNeeds) bdRuleNeeds.textContent = formatMoney(convertCurrency(recommendations.rule_50_30_20.needs, 'VND', currentCurrency), currentCurrency);
-        if (bdRuleWants) bdRuleWants.textContent = formatMoney(convertCurrency(recommendations.rule_50_30_20.wants, 'VND', currentCurrency), currentCurrency);
-        if (bdRuleSavings) bdRuleSavings.textContent = formatMoney(convertCurrency(recommendations.rule_50_30_20.savings, 'VND', currentCurrency), currentCurrency);
-        if (bdRuleSavingsLabel) {
-            const savingsPct = Math.round(settings.savings_target_pct || 25);
-            bdRuleSavingsLabel.textContent = `💰 ${savingsPct}% ${t('rule_savings_label') || 'Tiết kiệm & Tích lũy'}:`;
+        if (isVariableIncome) {
+            if (bdBreakdownTitle) bdBreakdownTitle.textContent = t('breakdown_title_runway');
+            if (bdRuleNeedsLabel) bdRuleNeedsLabel.textContent = t('lbl_runway_current');
+            if (bdRuleNeeds) {
+                const totalAssetsConverted = formatMoney(convertCurrency(settings.total_assets_vnd, 'VND', currentCurrency), currentCurrency);
+                const monthWord = t('opt_runway_3').includes('tháng') ? 'tháng' : (currentLang === 'de' ? 'Monate' : 'months');
+                bdRuleNeeds.textContent = `${recommendations.runway_months} ${monthWord} (${totalAssetsConverted})`;
+                bdRuleNeeds.style.color = recommendations.runway_months >= settings.runway_target_months ? 'var(--color-success)' : 'var(--color-warning)';
+            }
+            if (bdRuleWantsLabel) bdRuleWantsLabel.textContent = t('lbl_monthly_burn');
+            if (bdRuleWants) {
+                bdRuleWants.textContent = formatMoney(convertCurrency(settings.monthly_burn, 'VND', currentCurrency), currentCurrency);
+                bdRuleWants.style.color = 'var(--color-accent)';
+            }
+            if (bdRuleSavingsLabel) bdRuleSavingsLabel.textContent = t('lbl_cashflow_status');
+            if (bdRuleSavings) {
+                const netCashflow = actuals.net_month_cashflow_vnd !== undefined 
+                    ? actuals.net_month_cashflow_vnd 
+                    : (actuals.month_income_vnd - actuals.month_expense_vnd);
+                const netFormatted = formatMoney(convertCurrency(Math.abs(netCashflow), 'VND', currentCurrency), currentCurrency);
+                bdRuleSavings.textContent = (netCashflow >= 0 ? '+ ' : '- ') + netFormatted;
+                bdRuleSavings.style.color = netCashflow >= 0 ? 'var(--color-success)' : 'var(--color-danger)';
+            }
+        } else {
+            if (bdBreakdownTitle) bdBreakdownTitle.textContent = t('rule_50_30_20_title');
+            if (bdRuleNeedsLabel) bdRuleNeedsLabel.textContent = t('rule_needs');
+            if (bdRuleNeeds) {
+                bdRuleNeeds.textContent = formatMoney(convertCurrency(recommendations.rule_50_30_20.needs, 'VND', currentCurrency), currentCurrency);
+                bdRuleNeeds.style.color = 'var(--color-primary)';
+            }
+            if (bdRuleWantsLabel) bdRuleWantsLabel.textContent = t('rule_wants');
+            if (bdRuleWants) {
+                bdRuleWants.textContent = formatMoney(convertCurrency(recommendations.rule_50_30_20.wants, 'VND', currentCurrency), currentCurrency);
+                bdRuleWants.style.color = 'var(--color-warning)';
+            }
+            if (bdRuleSavingsLabel) {
+                const savingsPct = Math.round(settings.savings_target_pct || 25);
+                bdRuleSavingsLabel.textContent = `💰 ${savingsPct}% ${t('rule_savings_label') || 'Tiết kiệm & Tích lũy'}:`;
+            }
+            if (bdRuleSavings) {
+                bdRuleSavings.textContent = formatMoney(convertCurrency(recommendations.rule_50_30_20.savings, 'VND', currentCurrency), currentCurrency);
+                bdRuleSavings.style.color = 'var(--color-success)';
+            }
         }
 
         // Store persistent VND budget settings and update budget modal display
         savedBudgetVnd = {
-            expected_income: settings.expected_income,
-            monthly_budget: settings.monthly_budget,
-            savings_target_pct: settings.savings_target_pct
+            income_type: settings.income_type || 'variable',
+            runway_target_months: settings.runway_target_months || 6,
+            expected_income: settings.expected_income || 0,
+            monthly_budget: settings.monthly_budget || 15000000,
+            savings_target_pct: settings.savings_target_pct || 25
         };
+        currentBudgetIncomeType = savedBudgetVnd.income_type;
         updateBudgetModalDisplay();
 
     } catch (e) {
@@ -1811,6 +1898,31 @@ async function deleteSubscription(subId) {
 }
 
 // 17. BUDGET SETTINGS MODAL
+function setBudgetIncomeType(type) {
+    SoundEffects.playClick();
+    currentBudgetIncomeType = type;
+    const btnVariable = document.getElementById('btnIncomeTypeVariable');
+    const btnFixed = document.getElementById('btnIncomeTypeFixed');
+    const hint = document.getElementById('variableIncomeHint');
+    const groupRunway = document.getElementById('groupRunwayTarget');
+    const groupSavings = document.getElementById('groupSavingsPct');
+
+    if (type === 'variable') {
+        if (btnVariable) btnVariable.classList.add('active');
+        if (btnFixed) btnFixed.classList.remove('active');
+        if (hint) hint.style.display = 'block';
+        if (groupRunway) groupRunway.style.display = 'block';
+        if (groupSavings) groupSavings.style.display = 'none';
+    } else {
+        if (btnFixed) btnFixed.classList.add('active');
+        if (btnVariable) btnVariable.classList.remove('active');
+        if (hint) hint.style.display = 'none';
+        if (groupRunway) groupRunway.style.display = 'none';
+        if (groupSavings) groupSavings.style.display = 'block';
+    }
+    updateBudgetModalDisplay();
+}
+
 function setBudgetModalCurrency(curr) {
     const oldCurr = currentBudgetModalCurrency || 'VND';
     currentBudgetModalCurrency = curr;
@@ -1854,7 +1966,12 @@ function updateBudgetModalDisplay() {
     const lblInc = document.getElementById('labelExpectedIncome');
     const lblBgt = document.getElementById('labelMonthlyBudget');
     const curr = currentBudgetModalCurrency || currentCurrency || 'VND';
-    if (lblInc) lblInc.textContent = `${t('label_expected_income')} [${curr}]`;
+    if (lblInc) {
+        const optText = t('income_optional') || '(Tùy chọn)';
+        lblInc.textContent = (currentBudgetIncomeType === 'variable') 
+            ? `${t('label_expected_income')} [${curr}] ${optText}`
+            : `${t('label_expected_income')} [${curr}]`;
+    }
     if (lblBgt) lblBgt.textContent = `${t('label_monthly_budget')} [${curr}]`;
 }
 
@@ -1872,6 +1989,7 @@ function openBudgetModal() {
     const incInput = document.getElementById('setExpectedIncome');
     const bgtInput = document.getElementById('setMonthlyBudget');
     const pctInput = document.getElementById('setSavingsPct');
+    const runwaySelect = document.getElementById('setRunwayTarget');
 
     if (currentBudgetModalCurrency === 'EUR' || currentBudgetModalCurrency === 'USD') {
         if (incInput) { incInput.step = '0.01'; incInput.placeholder = currentBudgetModalCurrency === 'EUR' ? '650.00 €' : '750.00 $'; }
@@ -1882,11 +2000,16 @@ function openBudgetModal() {
     }
 
     if (savedBudgetVnd) {
+        setBudgetIncomeType(savedBudgetVnd.income_type || 'variable');
+        if (runwaySelect) runwaySelect.value = String(Math.round(savedBudgetVnd.runway_target_months || 6));
+
         const expConverted = convertCurrency(savedBudgetVnd.expected_income, 'VND', currentBudgetModalCurrency);
         const bgtConverted = convertCurrency(savedBudgetVnd.monthly_budget, 'VND', currentBudgetModalCurrency);
         if (incInput) incInput.value = (currentBudgetModalCurrency === 'VND') ? Math.round(expConverted) : Number(expConverted.toFixed(2));
         if (bgtInput) bgtInput.value = (currentBudgetModalCurrency === 'VND') ? Math.round(bgtConverted) : Number(bgtConverted.toFixed(2));
         if (pctInput) pctInput.value = savedBudgetVnd.savings_target_pct || 25;
+    } else {
+        setBudgetIncomeType('variable');
     }
 
     updateBudgetModalDisplay();
@@ -1894,11 +2017,19 @@ function openBudgetModal() {
 }
 
 async function saveBudgetSettings() {
-    const rawIncome = parseFloat(document.getElementById('setExpectedIncome').value);
+    const income_type = currentBudgetIncomeType || 'variable';
     const rawBudget = parseFloat(document.getElementById('setMonthlyBudget').value);
-    const savings_target_pct = parseFloat(document.getElementById('setSavingsPct').value) || 25;
+    const rawIncome = parseFloat(document.getElementById('setExpectedIncome').value) || 0;
+    const runway_target_months = parseFloat(document.getElementById('setRunwayTarget')?.value) || 6.0;
+    const savings_target_pct = parseFloat(document.getElementById('setSavingsPct')?.value) || 25.0;
 
-    if (isNaN(rawIncome) || rawIncome <= 0 || isNaN(rawBudget) || rawBudget <= 0) {
+    if (isNaN(rawBudget) || rawBudget <= 0) {
+        SoundEffects.playWarning();
+        alert(t('alert_enter_budget_details'));
+        return;
+    }
+
+    if (income_type === 'fixed' && (isNaN(rawIncome) || rawIncome <= 0)) {
         SoundEffects.playWarning();
         alert(t('alert_enter_budget_details'));
         return;
@@ -1912,12 +2043,24 @@ async function saveBudgetSettings() {
         const res = await fetch('/api/budget/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ expected_income, monthly_budget, savings_target_pct })
+            body: JSON.stringify({ 
+                income_type, 
+                runway_target_months, 
+                expected_income, 
+                monthly_budget, 
+                savings_target_pct 
+            })
         });
         const data = await res.json();
         if (data.success) {
             SoundEffects.playSuccess();
-            savedBudgetVnd = { expected_income, monthly_budget, savings_target_pct };
+            savedBudgetVnd = { 
+                income_type, 
+                runway_target_months, 
+                expected_income, 
+                monthly_budget, 
+                savings_target_pct 
+            };
             closeModal('budgetModal');
             showToast(t('budget_updated'), '🎯');
             loadBudgetHealth();

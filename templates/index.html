@@ -94,7 +94,12 @@
             </div>
             <div class="hp-bar-section">
                 <div class="hp-label-row">
-                    <span class="hp-title" data-i18n="health_title">❤️ CHỈ SỐ SỨC KHỎE TÀI CHÍNH (NGÂN SÁCH THÁNG)</span>
+                    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                        <span class="hp-title" id="hpTitleText" data-i18n="health_title">❤️ CHỈ SỐ SỨC KHỎE TÀI CHÍNH</span>
+                        <span class="pixel-tag" id="runwayBadge" style="background: rgba(0, 255, 102, 0.15); border: 1px solid var(--color-success); color: var(--color-success); font-size: 0.72rem; padding: 2px 7px; font-weight: bold; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                            🛡️ Dự trữ: Đang tính...
+                        </span>
+                    </div>
                     <span class="hp-value" id="hpValueText">100 / 100 HP</span>
                 </div>
                 <div class="hp-bar-outer">
@@ -342,18 +347,18 @@
                         </div>
                     </div>
 
-                    <!-- 50/30/20 Rule Analysis -->
-                    <div style="background: var(--bg-input); border: 2px solid var(--border-light); padding: 0.85rem;">
-                        <h4 style="font-family: var(--font-pixel); font-size: 0.72rem; color: var(--color-accent); margin-bottom: 0.6rem;" data-i18n="rule_50_30_20_title">
+                    <!-- Dynamic Breakdown: Runway Buffer for Variable Income / 50-30-20 for Fixed -->
+                    <div style="background: var(--bg-input); border: 2px solid var(--border-light); padding: 0.85rem;" id="budgetBreakdownCard">
+                        <h4 style="font-family: var(--font-pixel); font-size: 0.72rem; color: var(--color-accent); margin-bottom: 0.6rem;" id="bdBreakdownTitle" data-i18n="rule_50_30_20_title">
                             📐 GỢI Ý PHÂN BỔ (QUY TẮC 50/30/20):
                         </h4>
-                        <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.82rem;">
+                        <div id="bdBreakdownContent" style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.82rem;">
                             <div style="display: flex; justify-content: space-between;">
-                                <span data-i18n="rule_needs">🏠 50% Nhu cầu thiết yếu:</span>
+                                <span id="bdRuleNeedsLabel" data-i18n="rule_needs">🏠 50% Nhu cầu thiết yếu:</span>
                                 <strong id="bdRuleNeeds" style="color: var(--color-primary);">0 ₫</strong>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
-                                <span data-i18n="rule_wants">🛍️ 30% Mong muốn & Thưởng thức:</span>
+                                <span id="bdRuleWantsLabel" data-i18n="rule_wants">🛍️ 30% Mong muốn & Thưởng thức:</span>
                                 <strong id="bdRuleWants" style="color: var(--color-warning);">0 ₫</strong>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
@@ -800,6 +805,22 @@
                 <h3 data-i18n="modal_budget_title">THIẾT LẬP MỤC TIÊU & HẠN MỨC</h3>
                 <button class="modal-close-btn" onclick="closeModal('budgetModal')">✖</button>
             </div>
+            <!-- Income Type Selector -->
+            <div class="form-group">
+                <label data-i18n="label_income_type">LOẠI HÌNH THU NHẬP CỦA BẠN:</label>
+                <div class="type-radio-group">
+                    <button type="button" class="type-radio-btn income-type-btn active" id="btnIncomeTypeVariable" data-type="variable" onclick="setBudgetIncomeType('variable')">
+                        🌟 <span data-i18n="income_type_variable">Thu Nhập Tự Do / Bất Định</span>
+                    </button>
+                    <button type="button" class="type-radio-btn income-type-btn" id="btnIncomeTypeFixed" data-type="fixed" onclick="setBudgetIncomeType('fixed')">
+                        💼 <span data-i18n="income_type_fixed">Lương Cố Định Hàng Tháng</span>
+                    </button>
+                </div>
+                <div id="variableIncomeHint" class="pixel-info-card" style="margin-top: 0.5rem; background: rgba(0, 240, 255, 0.08); border: 1px dashed var(--color-primary); padding: 0.6rem; font-size: 0.74rem; color: var(--text-color);">
+                    💡 <span data-i18n="hint_variable_income_explain">Đánh giá sức khỏe tài chính thông minh dựa trên <b>Tổng Tài Sản trong các ví</b> và <b>Quỹ Sinh Tồn (Runway)</b>, bảo vệ bạn không bị cạn tiền ngay cả khi tháng này không có thu nhập cố định!</span>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label data-i18n="label_budget_curr">ĐƠN VỊ TIỀN TỆ THIẾT LẬP:</label>
                 <div class="type-radio-group">
@@ -814,17 +835,35 @@
                     </button>
                 </div>
             </div>
-            <div class="form-group">
-                <label id="labelExpectedIncome" data-i18n="label_expected_income">THU NHẬP DỰ KIẾN HÀNG THÁNG</label>
-                <input type="number" id="setExpectedIncome" class="form-control" step="0.01" required>
-                <small style="color: var(--text-muted); font-size: 0.75rem;" data-i18n="hint_expected_income">Dùng để tính tỷ lệ tiết kiệm và khuyến nghị 50/30/20</small>
+
+            <!-- Runway Target Months (Visible for Variable Income) -->
+            <div class="form-group" id="groupRunwayTarget">
+                <label data-i18n="label_runway_target">MỤC TIÊU QUỸ SINH TỒN (SỐ THÁNG DỰ PHÒNG):</label>
+                <select id="setRunwayTarget" class="form-control">
+                    <option value="3" data-i18n="opt_runway_3">3 tháng (Khẩn cấp tối thiểu)</option>
+                    <option value="6" selected data-i18n="opt_runway_6">6 tháng (Khuyên dùng - Chuẩn an toàn)</option>
+                    <option value="9" data-i18n="opt_runway_9">9 tháng (Bền vững)</option>
+                    <option value="12" data-i18n="opt_runway_12">12 tháng (Tuyệt đối an tâm / Tự do ngắn hạn)</option>
+                </select>
+                <small style="color: var(--text-muted); font-size: 0.75rem;" data-i18n="hint_runway_target">Số tháng bạn muốn tổng tài sản hiện tại có thể bảo đảm cuộc sống.</small>
             </div>
+
+            <!-- Monthly Living Ceiling Budget -->
             <div class="form-group">
-                <label id="labelMonthlyBudget" data-i18n="label_monthly_budget">HẠN MỨC CHI TIÊU TỐI ĐA THÁNG</label>
+                <label id="labelMonthlyBudget" data-i18n="label_monthly_budget">HẠN MỨC CHI TIÊU SINH HOẠT TRẦN / THÁNG</label>
                 <input type="number" id="setMonthlyBudget" class="form-control" step="0.01" required>
-                <small style="color: var(--text-muted); font-size: 0.75rem;" data-i18n="hint_monthly_budget">Mức trần chi tiêu cho phép trong 1 tháng</small>
+                <small style="color: var(--text-muted); font-size: 0.75rem;" id="hintMonthlyBudget" data-i18n="hint_monthly_budget">Mức chi tiêu tối đa mỗi tháng bạn mong muốn (Burn rate)</small>
             </div>
-            <div class="form-group">
+
+            <!-- Expected Income (Optional in variable mode, required in fixed mode) -->
+            <div class="form-group" id="groupExpectedIncome">
+                <label id="labelExpectedIncome" data-i18n="label_expected_income">THU NHẬP ƯỚC TÍNH (TÙY CHỌN, CÓ THỂ ĐỂ 0)</label>
+                <input type="number" id="setExpectedIncome" class="form-control" step="0.01" value="0">
+                <small style="color: var(--text-muted); font-size: 0.75rem;" id="hintExpectedIncome" data-i18n="hint_expected_income">Nếu có thu nhập thực tế trong tháng, hệ thống tự động cộng dồn vào hạn mức</small>
+            </div>
+
+            <!-- Savings Target Rate (For fixed mode) -->
+            <div class="form-group" id="groupSavingsPct" style="display: none;">
                 <label data-i18n="label_savings_pct">MỤC TIÊU TIẾT KIỆM (% THU NHẬP):</label>
                 <input type="number" id="setSavingsPct" class="form-control" placeholder="25" min="0" max="90" data-i18n-ph="ph_savings_pct">
                 <small style="color: var(--text-muted); font-size: 0.75rem;" data-i18n="hint_savings_pct">Ví dụ: 20% hoặc 25% thu nhập</small>

@@ -184,9 +184,18 @@ def init_db():
             expected_income REAL DEFAULT 18000000,
             monthly_budget REAL DEFAULT 12000000,
             savings_target_pct REAL DEFAULT 25,
-            month_year TEXT NOT NULL
+            month_year TEXT NOT NULL,
+            income_type TEXT DEFAULT 'variable',
+            runway_target_months REAL DEFAULT 6.0
         )
     ''')
+    
+    cursor.execute("PRAGMA table_info(budgets)")
+    b_cols = [r['name'] for r in cursor.fetchall()]
+    if 'income_type' not in b_cols:
+        cursor.execute("ALTER TABLE budgets ADD COLUMN income_type TEXT DEFAULT 'variable'")
+    if 'runway_target_months' not in b_cols:
+        cursor.execute("ALTER TABLE budgets ADD COLUMN runway_target_months REAL DEFAULT 6.0")
     
     # 7. Settings table
     cursor.execute('''
