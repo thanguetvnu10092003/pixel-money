@@ -1,0 +1,10 @@
+name: pixel_money
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.10
+  - pip
+  - pip:
+      - flask>=3.0.0
+      - openpyxl>=3.1.0

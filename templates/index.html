@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ví Tiền Pixel - Quản Lý Chi Tiêu & Đa Tiền Tệ (EUR • USD • VNĐ)</title>
+    <!-- Pixel Favicon Emoji -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪙</text></svg>">
+    <!-- Local & Google Fonts & CSS -->
+    <link rel="stylesheet" href="/static/css/pixel.css">
+    <!-- Local Chart.js for 100% offline support -->
+    <script src="/static/js/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="scanlines"></div>
+
+    <div class="container">
+        <!-- TOP HEADER BAR -->
+        <header class="header-bar">
+            <div class="logo-area">
+                <div class="logo-icon">🪙</div>
+                <div class="logo-text">
+                    <h1 data-i18n="app_title">VÍ TIỀN PIXEL</h1>
+                    <p data-i18n="app_subtitle">HỆ THỐNG QUẢN LÝ TÀI CHÍNH ĐA TIỀN TỆ (EUR • USD • VNĐ)</p>
+                </div>
+            </div>
+
+            <!-- Currency & Language Switchers -->
+            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span style="font-family: var(--font-pixel); font-size: 0.68rem; color: var(--text-muted);" data-i18n="currency_display_label">TIỀN TỆ:</span>
+                    <div class="currency-switcher">
+                        <button class="currency-pill active" data-curr="VND">₫ VNĐ</button>
+                        <button class="currency-pill" data-curr="EUR">€ EUR</button>
+                        <button class="currency-pill" data-curr="USD">$ USD</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span style="font-family: var(--font-pixel); font-size: 0.68rem; color: var(--text-muted);" data-i18n="lang_label">NGÔN NGỮ:</span>
+                    <div class="lang-switcher">
+                        <button class="lang-pill active" data-lang="vi">🇻🇳 VN</button>
+                        <button class="lang-pill" data-lang="en">🇬🇧 EN</button>
+                        <button class="lang-pill" data-lang="de">🇩🇪 DEU</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-controls">
+                <button class="pixel-btn pixel-btn-primary" onclick="openDepositModal()" data-i18n="btn_deposit">
+                    ⚡ NẠP TIỀN
+                </button>
+                <button class="pixel-btn" onclick="openTransferModal()" data-i18n="btn_transfer">
+                    🔄 CHUYỂN TIỀN
+                </button>
+                <button class="pixel-btn" onclick="openConverterModal()" title="Bộ chuyển đổi tiền tệ và xem tỷ giá EUR, USD, VNĐ" data-i18n="btn_rates">
+                    💱 TỶ GIÁ
+                </button>
+                <button class="pixel-btn pixel-btn-danger" onclick="openAddTxModal('expense')" data-i18n="btn_expense">
+                    ➕ CHI TIÊU
+                </button>
+                <button class="pixel-btn pixel-btn-success" onclick="openAddTxModal('income')" data-i18n="btn_income">
+                    ➕ THU NHẬP
+                </button>
+                <button class="pixel-btn pixel-btn-accent" onclick="openBudgetModal()" data-i18n="btn_budget">
+                    🎯 HẠN MỨC
+                </button>
+                <button class="pixel-btn" onclick="openBackupModal()" data-i18n="btn_excel">
+                    💾 EXCEL / SAO LƯU
+                </button>
+                <button class="pixel-btn" id="soundToggleBtn" data-i18n="btn_sound_on">
+                    🔊 BẬT ÂM
+                </button>
+            </div>
+        </header>
+
+        <!-- FINANCIAL HEALTH (HP BAR) & SMART NPC ADVISOR -->
+        <section class="hp-container">
+            <div class="npc-avatar-box">
+                <span class="npc-icon" id="npcAvatar">🛡️</span>
+                <span class="npc-name" data-i18n="npc_name">HIỆP SĨ TÀI CHÍNH</span>
+            </div>
+            <div class="hp-bar-section">
+                <div class="hp-label-row">
+                    <span class="hp-title" data-i18n="health_title">❤️ CHỈ SỐ SỨC KHỎE TÀI CHÍNH (NGÂN SÁCH THÁNG)</span>
+                    <span class="hp-value" id="hpValueText">100 / 100 HP</span>
+                </div>
+                <div class="hp-bar-outer">
+                    <div class="hp-bar-inner" id="hpBarInner" style="width: 100%;"></div>
+                </div>
+                <div class="npc-dialogue-box">
+                    <div class="npc-dialogue-title" id="npcAdviceTitle" data-i18n="npc_advice_label">LỜI KHUYÊN HÔM NAY:</div>
+                    <div id="npcAdviceText">Đang tính toán ngân sách an toàn...</div>
+                </div>
+            </div>
+            <div>
+                <button class="pixel-btn pixel-btn-sm pixel-btn-primary" onclick="openBudgetModal()" style="width: 100%; white-space: nowrap;" data-i18n="btn_edit_budget">
+                    ⚙️ ĐỔI NGÂN SÁCH
+                </button>
+            </div>
+        </section>
+
+        <!-- WALLETS & MONEY SOURCES SECTION -->
+        <section class="wallets-section">
+            <div class="pixel-box" style="padding: 1rem 1.25rem;">
+                <div class="pixel-box-header" style="margin-bottom: 0.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                        <span class="pixel-title" data-i18n="wallets_title">💼 CÁC NGUỒN TIỀN & VÍ CỦA BẠN (ĐA TIỀN TỆ)</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);" data-i18n="wallets_hint">(Nhấp vào ví để lọc giao dịch theo nguồn)</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="pixel-btn pixel-btn-sm pixel-btn-primary" onclick="openDepositModal()" data-i18n="btn_deposit">
+                            ➕ Nạp Tiền
+                        </button>
+                        <button class="pixel-btn pixel-btn-sm" onclick="openTransferModal()" data-i18n="btn_transfer">
+                            🔄 Chuyển Tiền
+                        </button>
+                        <button class="pixel-btn pixel-btn-sm" onclick="openAddWalletModal()" data-i18n="btn_add_wallet">
+                            ➕ Thêm Ví Mới
+                        </button>
+                    </div>
+                </div>
+                <div class="wallets-grid" id="walletsGrid">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- STATS KPI CARDS -->
+        <section class="stats-grid">
+            <!-- Total Assets across all wallets -->
+            <div class="stat-card" style="border-top: 4px solid var(--color-primary);">
+                <div class="stat-top">
+                    <span class="stat-label" data-i18n="total_assets">Tổng Tài Sản (Các Ví)</span>
+                    <span class="stat-icon">🏦</span>
+                </div>
+                <div class="stat-amount" id="kpiTotalAssets" style="color: var(--color-primary);">0 ₫</div>
+                <div class="stat-sub" data-i18n="total_assets_sub">Tổng số dư khả dụng thực tế</div>
+            </div>
+            <!-- Safe to spend today -->
+            <div class="stat-card card-safe">
+                <div class="stat-top">
+                    <span class="stat-label" data-i18n="kpi_safe_daily">Hạn Mức Hôm Nay</span>
+                    <span class="stat-icon">🎯</span>
+                </div>
+                <div class="stat-amount" id="kpiSafeDaily" style="color: var(--color-accent);">0 ₫</div>
+                <div class="stat-sub" data-i18n="kpi_safe_daily_sub">Mức chi tối đa an toàn mỗi ngày</div>
+            </div>
+            <!-- Total expense in period -->
+            <div class="stat-card card-expense">
+                <div class="stat-top">
+                    <span class="stat-label" data-i18n="kpi_expense">Tổng Chi Tiêu</span>
+                    <span class="stat-icon">💸</span>
+                </div>
+                <div class="stat-amount" id="kpiTotalExpense" style="color: var(--color-danger);">0 ₫</div>
+                <div class="stat-sub" id="kpiTxCount">0 giao dịch</div>
+            </div>
+            <!-- Total income in period -->
+            <div class="stat-card card-income">
+                <div class="stat-top">
+                    <span class="stat-label" data-i18n="kpi_income">Tổng Thu Nhập</span>
+                    <span class="stat-icon">💵</span>
+                </div>
+                <div class="stat-amount" id="kpiTotalIncome" style="color: var(--color-success);">0 ₫</div>
+                <div class="stat-sub" data-i18n="kpi_income_sub">Các nguồn thu đã nhận</div>
+            </div>
+            <!-- Balance -->
+            <div class="stat-card card-balance">
+                <div class="stat-top">
+                    <span class="stat-label" data-i18n="kpi_balance">Số Dư Dòng Tiền</span>
+                    <span class="stat-icon">⚖️</span>
+                </div>
+                <div class="stat-amount" id="kpiBalance" style="color: var(--color-secondary);">0 ₫</div>
+                <div class="stat-sub" data-i18n="kpi_balance_sub">Thu nhập - Chi tiêu kỳ này</div>
+            </div>
+        </section>
+
+        <!-- PERIOD TABS BAR -->
+        <section class="period-tabs-bar">
+            <div class="pixel-title" data-i18n="period_title">
+                📊 KHOẢNG THỜI GIAN THỐNG KÊ
+            </div>
+            <div class="period-pills">
+                <button class="period-pill" data-period="day" data-i18n="period_day">Hôm Nay</button>
+                <button class="period-pill" data-period="week" data-i18n="period_week">Tuần Này</button>
+                <button class="period-pill active" data-period="month" data-i18n="period_month">Tháng Này</button>
+                <button class="period-pill" data-period="year" data-i18n="period_year">Năm Nay</button>
+                <button class="period-pill" data-period="all" data-i18n="period_all">Tất Cả</button>
+            </div>
+        </section>
+
+        <!-- MAIN DASHBOARD CONTENT (2 COLUMNS) -->
+        <main class="dashboard-grid">
+            <!-- LEFT COLUMN: CHARTS, STATS & TRANSACTION LOG -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- CHARTS ROW -->
+                <div class="pixel-box">
+                    <div class="pixel-box-header">
+                        <span class="pixel-title" data-i18n="chart_title">📈 BIỂU ĐỒ PHÂN TÍCH CHI TIÊU</span>
+                        <a href="/api/export/excel" class="pixel-btn pixel-btn-sm pixel-btn-success" download data-i18n="btn_export_excel_sm">
+                            📥 Xuất Báo Cáo Excel
+                        </a>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h4 data-i18n="chart_cat">🍩 THEO DANH MỤC</h4>
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="categoryChartCanvas"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h4 data-i18n="chart_timeline">📊 BIẾN ĐỘNG DÒNG TIỀN</h4>
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="timelineChartCanvas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TOP EXPENSES IN PERIOD -->
+                    <div style="margin-top: 1rem;">
+                        <h4 style="font-family: var(--font-pixel); font-size: 0.75rem; color: var(--color-warning); margin-bottom: 0.5rem;" data-i18n="top_expenses_title">
+                            🏆 TOP 5 KHOẢN CHI LỚN NHẤT
+                        </h4>
+                        <div id="topExpensesList" style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TRANSACTIONS HISTORY & FILTER -->
+                <div class="pixel-box">
+                    <div class="pixel-box-header">
+                        <span class="pixel-title" data-i18n="tx_title">📜 LỊCH SỬ THU CHI & NGUỒN TIỀN</span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="pixel-btn pixel-btn-sm pixel-btn-primary" onclick="openDepositModal()" data-i18n="btn_deposit">
+                                ⚡ Nạp Tiền
+                            </button>
+                            <button class="pixel-btn pixel-btn-sm pixel-btn-danger" onclick="openAddTxModal('expense')" data-i18n="btn_expense">
+                                ➕ Thêm Chi
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Controls -->
+                    <div class="tx-filter-bar">
+                        <input type="text" id="searchTxInput" class="pixel-input" placeholder="🔍 Tìm kiếm..." data-i18n-ph="search_placeholder" style="flex: 1.5; min-width: 150px;">
+                        <select id="filterCategory" class="pixel-input" style="flex: 1; min-width: 120px;">
+                            <option value="" data-i18n="filter_all_cats">Tất cả danh mục</option>
+                        </select>
+                        <select id="filterWallet" class="pixel-input" style="flex: 1; min-width: 120px;">
+                            <option value="" data-i18n="filter_all_wallets">Tất cả nguồn tiền</option>
+                        </select>
+                        <select id="filterCurrency" class="pixel-input" style="width: 110px;">
+                            <option value="" data-i18n="filter_all_currencies">Tất cả tiền tệ</option>
+                            <option value="VND">₫ VNĐ</option>
+                            <option value="EUR">€ EUR</option>
+                            <option value="USD">$ USD</option>
+                        </select>
+                        <select id="filterType" class="pixel-input" style="width: 105px;">
+                            <option value="" data-i18n="filter_all_types">Tất cả loại</option>
+                            <option value="expense" data-i18n="type_expense">Chi tiêu</option>
+                            <option value="income" data-i18n="type_income">Thu nhập</option>
+                        </select>
+                    </div>
+
+                    <!-- Transactions List -->
+                    <div class="tx-list" id="transactionsList">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: RECURRING SERVICES & SMART BUDGET ADVISOR -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                
+                <!-- MONTHLY RECURRING SERVICES / SUBSCRIPTIONS -->
+                <div class="pixel-box">
+                    <div class="pixel-box-header">
+                        <span class="pixel-title" data-i18n="sub_title">📺 DỊCH VỤ ĐỊNH KỲ & ĐĂNG KÝ THÁNG</span>
+                        <button class="pixel-btn pixel-btn-sm pixel-btn-accent" onclick="openAddSubModal()" data-i18n="btn_add_sub">
+                            ➕ THÊM
+                        </button>
+                    </div>
+                    
+                    <div style="background: var(--bg-input); border: 2px solid var(--border-light); padding: 0.85rem; margin-bottom: 1rem; display: flex; justify-content: space-between;">
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);" data-i18n="sub_monthly_total">Tổng chi phí cố định/tháng</div>
+                            <div style="font-family: var(--font-pixel); font-size: 1.05rem; color: var(--color-secondary);" id="subTotalMonthly">0 ₫</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 0.75rem; color: var(--text-muted);" data-i18n="sub_yearly_total">Tổng quy đổi/năm</div>
+                            <div style="font-family: var(--font-pixel); font-size: 1.05rem; color: var(--color-warning);" id="subTotalYearly">0 ₫</div>
+                        </div>
+                    </div>
+
+                    <div class="sub-grid" id="subscriptionsList">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+                <!-- SMART BUDGET BREAKDOWN & REASONABLE SPENDING ADVISOR -->
+                <div class="pixel-box">
+                    <div class="pixel-box-header">
+                        <span class="pixel-title" data-i18n="budget_limits_title">💡 MỨC CHI TIÊU HỢP LÝ THEO MỐC</span>
+                        <button class="pixel-btn pixel-btn-sm" onclick="openBudgetModal()" data-i18n="btn_config">
+                            ⚙️ CẤU HÌNH
+                        </button>
+                    </div>
+
+                    <div class="budget-advice-grid">
+                        <div class="budget-tier-box">
+                            <span class="tier-title" data-i18n="limit_safe_today">HÔM NAY ĐƯỢC TIÊU</span>
+                            <span class="tier-val" id="bdSafeDay">0 ₫</span>
+                            <span class="tier-note"><span data-i18n="limit_spent_today">Đã tiêu hôm nay: </span><b id="bdSpentToday">0 ₫</b></span>
+                        </div>
+                        <div class="budget-tier-box">
+                            <span class="tier-title" data-i18n="limit_rem_week">TUẦN NÀY CÒN LẠI</span>
+                            <span class="tier-val" id="bdRemWeek">0 ₫</span>
+                            <span class="tier-note" data-i18n="limit_rem_week_sub">Hạn mức an toàn 7 ngày</span>
+                        </div>
+                        <div class="budget-tier-box">
+                            <span class="tier-title" data-i18n="limit_rem_month">THÁNG NÀY CÒN LẠI</span>
+                            <span class="tier-val" id="bdRemMonth">0 ₫</span>
+                            <span class="tier-note" data-i18n="limit_rem_month_sub">Đã trừ các dịch vụ cố định</span>
+                        </div>
+                        <div class="budget-tier-box">
+                            <span class="tier-title" data-i18n="limit_fixed_sub">DỊCH VỤ CỐ ĐỊNH</span>
+                            <span class="tier-val" id="bdFixedSub">0 ₫</span>
+                            <span class="tier-note" data-i18n="limit_fixed_sub_sub">Tự động giữ lại mỗi tháng</span>
+                        </div>
+                    </div>
+
+                    <!-- 50/30/20 Rule Analysis -->
+                    <div style="background: var(--bg-input); border: 2px solid var(--border-light); padding: 0.85rem;">
+                        <h4 style="font-family: var(--font-pixel); font-size: 0.72rem; color: var(--color-accent); margin-bottom: 0.6rem;" data-i18n="rule_50_30_20_title">
+                            📐 GỢI Ý PHÂN BỔ (QUY TẮC 50/30/20):
+                        </h4>
+                        <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.82rem;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span data-i18n="rule_needs">🏠 50% Nhu cầu thiết yếu:</span>
+                                <strong id="bdRuleNeeds" style="color: var(--color-primary);">0 ₫</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span data-i18n="rule_wants">🛍️ 30% Mong muốn & Thưởng thức:</span>
+                                <strong id="bdRuleWants" style="color: var(--color-warning);">0 ₫</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span data-i18n="rule_savings">💰 20% Tiết kiệm & Tích lũy:</span>
+                                <strong id="bdRuleSavings" style="color: var(--color-success);">0 ₫</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- FOOTER -->
+        <footer data-i18n="footer_text">
+            VÍ TIỀN PIXEL • PHÁT TRIỂN DÀNH CHO QUẢN LÝ TÀI CHÍNH CÁ NHÂN ĐA TIỀN TỆ (EUR • USD • VNĐ) • 2026
+        </footer>
+    </div>
+
+    <!-- === MODALS === -->
+
+    <!-- 1. ADD / EDIT TRANSACTION MODAL -->
+    <div class="modal-overlay" id="txModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="txModalTitle" data-i18n="modal_tx_expense_title">GHI NHẬN KHOẢN CHI</h3>
+                <button class="modal-close-btn" onclick="closeModal('txModal')">✖</button>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_tx_type">LOẠI GIAO DỊCH:</label>
+                <div class="type-radio-group">
+                    <button type="button" class="type-radio-btn active expense" id="typeExpenseBtn" onclick="setTypeSelection('expense')">
+                        💸 <span data-i18n="type_expense">CHI TIÊU</span>
+                    </button>
+                    <button type="button" class="type-radio-btn" id="typeIncomeBtn" onclick="setTypeSelection('income')">
+                        💵 <span data-i18n="type_income">THU NHẬP</span>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_currency">ĐƠN VỊ TIỀN TỆ:</label>
+                <div class="type-radio-group">
+                    <button type="button" class="type-radio-btn tx-curr-btn active" data-curr="VND" onclick="setTxModalCurrency('VND')">
+                        ₫ VNĐ
+                    </button>
+                    <button type="button" class="type-radio-btn tx-curr-btn" data-curr="EUR" onclick="setTxModalCurrency('EUR')">
+                        € EUR (cents)
+                    </button>
+                    <button type="button" class="type-radio-btn tx-curr-btn" data-curr="USD" onclick="setTxModalCurrency('USD')">
+                        $ USD (cents)
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_amount">SỐ TIỀN:</label>
+                <input type="number" id="txAmount" class="form-control" placeholder="Ví dụ: 50000" min="0.01" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_wallet">NGUỒN TIỀN / VÍ:</label>
+                <select id="txWallet" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_category">DANH MỤC:</label>
+                <select id="txCategory" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_date">NGÀY GIAO DỊCH:</label>
+                <input type="date" id="txDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_note">GHI CHÚ / MÔ TẢ:</label>
+                <input type="text" id="txNote" class="form-control" placeholder="Ví dụ: Ăn trưa, Cà phê, Mua sách...">
+            </div>
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                <button class="pixel-btn pixel-btn-primary" style="flex: 1;" onclick="saveTransaction(event)" data-i18n="btn_save_tx">
+                    💾 LƯU GIAO DỊCH
+                </button>
+                <button class="pixel-btn" onclick="closeModal('txModal')" data-i18n="btn_cancel">
+                    HỦY
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. DEPOSIT MONEY MODAL -->
+    <div class="modal-overlay" id="depositModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="modal_deposit_title">⚡ NẠP / THÊM TIỀN VÀO NGUỒN TIỀN</h3>
+                <button class="modal-close-btn" onclick="closeModal('depositModal')">✖</button>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_deposit_wallet">CHỌN NGUỒN TIỀN / VÍ NHẬN:</label>
+                <select id="depositWallet" class="form-control"></select>
+                <small id="depositCurrencyHint" style="color: var(--color-primary); font-size: 0.72rem; margin-top: 2px; display: block;"></small>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_deposit_amount">SỐ TIỀN NẠP:</label>
+                <input type="number" id="depositAmount" class="form-control" placeholder="Ví dụ: 1000000" min="0.01" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_deposit_cat">DANH MỤC THU NHẬP / NGUỒN ĐẾN:</label>
+                <select id="depositCategory" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_deposit_date">NGÀY NẠP:</label>
+                <input type="date" id="depositDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_note">GHI CHÚ:</label>
+                <input type="text" id="depositNote" class="form-control" placeholder="Ví dụ: Lương, Thưởng, Bán hàng online...">
+            </div>
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                <button class="pixel-btn pixel-btn-success" style="flex: 1;" onclick="saveDeposit(event)" data-i18n="btn_confirm_deposit">
+                    💰 XÁC NHẬN NẠP TIỀN
+                </button>
+                <button class="pixel-btn" onclick="closeModal('depositModal')" data-i18n="btn_cancel">
+                    HỦY
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. TRANSFER BETWEEN WALLETS MODAL -->
+    <div class="modal-overlay" id="transferModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="modal_transfer_title">🔄 CHUYỂN TIỀN GIỮA CÁC VÍ</h3>
+                <button class="modal-close-btn" onclick="closeModal('transferModal')">✖</button>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_transfer_from">CHUYỂN TỪ NGUỒN (TRỪ TIỀN):</label>
+                <select id="transferFromWallet" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_transfer_to">CHUYỂN ĐẾN NGUỒN (CỘNG TIỀN):</label>
+                <select id="transferToWallet" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_transfer_amount">SỐ TIỀN CHUYỂN (THEO NGUỒN GỬI):</label>
+                <input type="number" id="transferAmount" class="form-control" placeholder="Ví dụ: 50" min="0.01" step="0.01" required>
+                <small style="color: var(--text-muted); font-size: 0.72rem;" data-i18n="transfer_hint">Hệ thống sẽ tự động quy đổi tỷ giá nếu 2 ví khác đơn vị tiền tệ (EUR, USD, VND).</small>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_date">NGÀY CHUYỂN:</label>
+                <input type="date" id="transferDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_note">GHI CHÚ:</label>
+                <input type="text" id="transferNote" class="form-control" placeholder="Ví dụ: Rút tiền mặt, Nạp thẻ Euro...">
+            </div>
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                <button class="pixel-btn pixel-btn-accent" style="flex: 1;" onclick="saveTransfer(event)" data-i18n="btn_confirm_transfer">
+                    🔄 XÁC NHẬN CHUYỂN TIỀN
+                </button>
+                <button class="pixel-btn" onclick="closeModal('transferModal')" data-i18n="btn_cancel">
+                    HỦY
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. ADD WALLET MODAL -->
+    <div class="modal-overlay" id="walletModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="modal_wallet_title">💼 THÊM NGUỒN TIỀN / VÍ MỚI</h3>
+                <button class="modal-close-btn" onclick="closeModal('walletModal')">✖</button>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_wallet_name">TÊN NGUỒN TIỀN:</label>
+                <input type="text" id="walletName" class="form-control" placeholder="Ví dụ: MB Bank, Revolut Euro, PayPal USD..." required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_wallet_curr">LOẠI TIỀN TỆ CỦA VÍ:</label>
+                <select id="walletCurrency" class="form-control">
+                    <option value="VND">₫ VNĐ (Việt Nam Đồng)</option>
+                    <option value="EUR">€ EUR (Euro - hỗ trợ cents)</option>
+                    <option value="USD">$ USD (Đô la Mỹ - hỗ trợ cents)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_wallet_type">LOẠI NGUỒN:</label>
+                <select id="walletType" class="form-control">
+                    <option value="bank">🏦 Tài khoản Ngân hàng</option>
+                    <option value="cash">💵 Tiền mặt</option>
+                    <option value="ewallet">📱 Ví điện tử</option>
+                    <option value="credit">💳 Thẻ tín dụng</option>
+                    <option value="savings">🐷 Tiết kiệm / Heo đất</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_init_bal">SỐ DƯ BAN ĐẦU:</label>
+                <input type="number" id="walletInitialBal" class="form-control" value="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_icon">BIỂU TƯỢNG (EMOJI):</label>
+                <input type="text" id="walletIcon" class="form-control" value="🏦" style="font-size: 1.2rem;">
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_color">MÀU SẮC ĐẠI DIỆN:</label>
+                <input type="color" id="walletColor" class="form-control" value="#00f0ff" style="height: 42px; padding: 2px;">
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_note">GHI CHÚ:</label>
+                <input type="text" id="walletNote" class="form-control" placeholder="Mục đích sử dụng nguồn tiền này...">
+            </div>
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                <button class="pixel-btn pixel-btn-primary" style="flex: 1;" onclick="saveNewWallet()" data-i18n="btn_create_wallet">
+                    💾 TẠO NGUỒN TIỀN
+                </button>
+                <button class="pixel-btn" onclick="closeModal('walletModal')" data-i18n="btn_cancel">
+                    HỦY
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. CURRENCY CONVERTER & EXCHANGE RATES MODAL (NEW) -->
+    <div class="modal-overlay" id="converterModal">
+        <div class="modal-content" style="max-width: 580px;">
+            <div class="modal-header">
+                <h3 data-i18n="modal_converter_title">💱 BỘ CHUYỂN ĐỔI TIỀN TỆ PIXEL</h3>
+                <button class="modal-close-btn" onclick="closeModal('converterModal')">✖</button>
+            </div>
+
+            <!-- Quick Converter Section -->
+            <div style="background: var(--bg-input); border: 2px solid var(--border-light); padding: 1.25rem; margin-bottom: 1.25rem;">
+                <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; align-items: flex-end;">
+                    <div style="flex: 2;">
+                        <label style="font-family: var(--font-pixel); font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;" data-i18n="label_convert_amount">SỐ TIỀN CẦN ĐỔI:</label>
+                        <input type="number" id="convertAmountInput" class="form-control" value="100" min="0.01" step="0.01" style="font-size: 1.1rem; font-weight: bold;">
+                    </div>
+                    <div style="flex: 1.2;">
+                        <label style="font-family: var(--font-pixel); font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;" data-i18n="label_convert_from">TỪ ĐƠN VỊ:</label>
+                        <select id="convertFromSelect" class="form-control" style="font-weight: bold;">
+                            <option value="EUR">€ EUR</option>
+                            <option value="USD">$ USD</option>
+                            <option value="VND">₫ VNĐ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Conversion Results Box -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; text-align: center;">
+                    <div style="background: var(--bg-card); border: 2px solid var(--border-color); padding: 0.75rem 0.5rem;">
+                        <span style="font-family: var(--font-pixel); font-size: 0.65rem; color: var(--color-primary); display: block;">VIỆT NAM ĐỒNG</span>
+                        <span style="font-family: var(--font-pixel); font-size: 0.95rem; font-weight: bold; color: var(--text-highlight); margin-top: 0.3rem; display: block;" id="resVND">0 ₫</span>
+                    </div>
+                    <div style="background: var(--bg-card); border: 2px solid var(--border-color); padding: 0.75rem 0.5rem;">
+                        <span style="font-family: var(--font-pixel); font-size: 0.65rem; color: var(--color-accent); display: block;">EURO (EUR CENTS)</span>
+                        <span style="font-family: var(--font-pixel); font-size: 0.95rem; font-weight: bold; color: var(--text-highlight); margin-top: 0.3rem; display: block;" id="resEUR">0.00 €</span>
+                    </div>
+                    <div style="background: var(--bg-card); border: 2px solid var(--border-color); padding: 0.75rem 0.5rem;">
+                        <span style="font-family: var(--font-pixel); font-size: 0.65rem; color: var(--color-success); display: block;">ĐÔ LA MỸ (USD)</span>
+                        <span style="font-family: var(--font-pixel); font-size: 0.95rem; font-weight: bold; color: var(--text-highlight); margin-top: 0.3rem; display: block;" id="resUSD">$ 0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exchange Rates Configuration -->
+            <div style="background: var(--bg-input); border: 2px solid var(--border-light); padding: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <span style="font-family: var(--font-pixel); font-size: 0.75rem; color: var(--color-accent);" data-i18n="rates_settings_title">⚙️ CÀI ĐẶT TỶ GIÁ QUY ĐỔI:</span>
+                    <button class="pixel-btn pixel-btn-sm pixel-btn-primary" id="syncRatesBtn" onclick="syncRatesOnline()" data-i18n="btn_sync_online">
+                        ⚡ Đồng Bộ Online
+                    </button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                    <div>
+                        <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">1 USD = ? VNĐ</label>
+                        <input type="number" id="rateUsdInput" class="form-control" value="25400" step="100">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">1 EUR = ? VNĐ</label>
+                        <input type="number" id="rateEurInput" class="form-control" value="27600" step="100">
+                    </div>
+                </div>
+                <button class="pixel-btn pixel-btn-sm pixel-btn-accent" style="width: 100%;" onclick="saveCustomRates()" data-i18n="btn_save_rates">
+                    💾 LƯU TỶ GIÁ TÙY CHỈNH
+                </button>
+            </div>
+
+            <div style="margin-top: 1.25rem; text-align: right;">
+                <button class="pixel-btn" onclick="closeModal('converterModal')" data-i18n="btn_close">
+                    ĐÓNG
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. ADD SUBSCRIPTION MODAL -->
+    <div class="modal-overlay" id="subModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="modal_sub_title">THÊM DỊCH VỤ ĐỊNH KỲ</h3>
+                <button class="modal-close-btn" onclick="closeModal('subModal')">✖</button>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_sub_name">TÊN DỊCH VỤ / KHOẢN CỐ ĐỊNH:</label>
+                <input type="text" id="subName" class="form-control" placeholder="Ví dụ: Netflix, Spotify, iCloud, Tiền phòng..." required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_currency">TIỀN TỆ:</label>
+                <select id="subCurrency" class="form-control">
+                    <option value="VND">₫ VNĐ</option>
+                    <option value="EUR">€ EUR (hỗ trợ cents)</option>
+                    <option value="USD">$ USD (hỗ trợ cents)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_amount">SỐ TIỀN:</label>
+                <input type="number" id="subAmount" class="form-control" placeholder="Ví dụ: 10.99 hoặc 260000" min="0.01" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_sub_wallet">TRÍCH TỪ NGUỒN TIỀN:</label>
+                <select id="subWallet" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_sub_cycle">CHU KỲ GIA HẠN:</label>
+                <select id="subCycle" class="form-control">
+                    <option value="monthly" data-i18n="cycle_monthly">Hàng tháng</option>
+                    <option value="yearly" data-i18n="cycle_yearly">Hàng năm</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_sub_day">NGÀY ĐẾN HẠN HÀNG THÁNG (1 - 31):</label>
+                <input type="number" id="subDay" class="form-control" min="1" max="31" value="1" required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_category">DANH MỤC LIÊN QUAN:</label>
+                <select id="subCategory" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_note">GHI CHÚ:</label>
+                <input type="text" id="subNote" class="form-control" placeholder="Gói dịch vụ, người cùng share...">
+            </div>
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                <button class="pixel-btn pixel-btn-accent" style="flex: 1;" onclick="saveSubscription()" data-i18n="btn_add_sub_confirm">
+                    ➕ THÊM THEO DÕI
+                </button>
+                <button class="pixel-btn" onclick="closeModal('subModal')" data-i18n="btn_cancel">
+                    HỦY
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. BUDGET SETTINGS MODAL -->
+    <div class="modal-overlay" id="budgetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="modal_budget_title">THIẾT LẬP MỤC TIÊU & HẠN MỨC</h3>
+                <button class="modal-close-btn" onclick="closeModal('budgetModal')">✖</button>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_budget_curr">ĐƠN VỊ TIỀN TỆ THIẾT LẬP:</label>
+                <div class="type-radio-group">
+                    <button type="button" class="type-radio-btn budget-curr-btn active" data-curr="VND" onclick="setBudgetModalCurrency('VND')">
+                        ₫ VNĐ
+                    </button>
+                    <button type="button" class="type-radio-btn budget-curr-btn" data-curr="EUR" onclick="setBudgetModalCurrency('EUR')">
+                        € EUR (cents)
+                    </button>
+                    <button type="button" class="type-radio-btn budget-curr-btn" data-curr="USD" onclick="setBudgetModalCurrency('USD')">
+                        $ USD (cents)
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label id="labelExpectedIncome" data-i18n="label_expected_income">THU NHẬP DỰ KIẾN HÀNG THÁNG</label>
+                <input type="number" id="setExpectedIncome" class="form-control" step="0.01" required>
+                <small style="color: var(--text-muted); font-size: 0.75rem;" data-i18n="hint_expected_income">Dùng để tính tỷ lệ tiết kiệm và khuyến nghị 50/30/20</small>
+            </div>
+            <div class="form-group">
+                <label id="labelMonthlyBudget" data-i18n="label_monthly_budget">HẠN MỨC CHI TIÊU TỐI ĐA THÁNG</label>
+                <input type="number" id="setMonthlyBudget" class="form-control" step="0.01" required>
+                <small style="color: var(--text-muted); font-size: 0.75rem;" data-i18n="hint_monthly_budget">Mức trần chi tiêu cho phép trong 1 tháng</small>
+            </div>
+            <div class="form-group">
+                <label data-i18n="label_savings_pct">MỤC TIÊU TIẾT KIỆM (% THU NHẬP):</label>
+                <input type="number" id="setSavingsPct" class="form-control" placeholder="25" min="0" max="90">
+                <small style="color: var(--text-muted); font-size: 0.75rem;" data-i18n="hint_savings_pct">Ví dụ: 20% hoặc 25% thu nhập</small>
+            </div>
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                <button class="pixel-btn pixel-btn-primary" style="flex: 1;" onclick="saveBudgetSettings()" data-i18n="btn_save_budget">
+                    💾 LƯU THIẾT LẬP
+                </button>
+                <button class="pixel-btn" onclick="closeModal('budgetModal')" data-i18n="btn_close">
+                    ĐÓNG
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. BACKUP & EXPORT MODAL -->
+    <div class="modal-overlay" id="backupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="modal_backup_title">SAO LƯU & XUẤT BÁO CÁO EXCEL</h3>
+                <button class="modal-close-btn" onclick="closeModal('backupModal')">✖</button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="background: var(--bg-input); border: 2px solid var(--border-light); padding: 1rem;">
+                    <h4 style="font-family: var(--font-pixel); font-size: 0.82rem; color: var(--color-success); margin-bottom: 0.4rem;">
+                        📊 XUẤT FILE EXCEL ĐA TRANG (EUR • USD • VNĐ)
+                    </h4>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        Báo cáo Excel đa tiền tệ với định dạng cents chuyên nghiệp cho EUR và USD:
+                        <br>• <b>Sheet 1</b>: Tổng Quan, Tỷ giá quy đổi & Thống kê ví.
+                        <br>• <b>Sheet 2</b>: Sổ thu chi chi tiết hiển thị tiền gốc & quy đổi VNĐ.
+                        <br>• <b>Sheet 3</b>: Quản lý dịch vụ đăng ký định kỳ.
+                    </p>
+                    <a href="/api/export/excel" class="pixel-btn pixel-btn-success pixel-btn-sm" download data-i18n="btn_download_excel">
+                        📥 TẢI BÁO CÁO EXCEL ĐẸP MẮT
+                    </a>
+                </div>
+
+                <div style="background: var(--bg-input); border: 2px solid var(--border-light); padding: 1rem;">
+                    <h4 style="font-family: var(--font-pixel); font-size: 0.82rem; color: var(--color-primary); margin-bottom: 0.4rem;">
+                        💾 SAO LƯU TOÀN BỘ HỆ THỐNG (.JSON)
+                    </h4>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        Lưu trữ an toàn các danh mục, giao dịch, số dư ví, dịch vụ và hạn mức tài chính.
+                    </p>
+                    <a href="/api/backup/export_json" class="pixel-btn pixel-btn-primary pixel-btn-sm" download data-i18n="btn_download_json">
+                        📥 TẢI FILE SAO LƯU .JSON
+                    </a>
+                </div>
+
+                <div style="background: var(--bg-input); border: 2px solid var(--border-light); padding: 1rem;">
+                    <h4 style="font-family: var(--font-pixel); font-size: 0.82rem; color: var(--color-warning); margin-bottom: 0.4rem;">
+                        🔄 PHỤC HỒI TỪ FILE JSON
+                    </h4>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        Khôi phục dữ liệu đã sao lưu trước đó từ máy của bạn.
+                    </p>
+                    <input type="file" id="importJsonInput" accept=".json" style="display: none;" onchange="handleImportJson(this)">
+                    <button class="pixel-btn pixel-btn-warning pixel-btn-sm" onclick="document.getElementById('importJsonInput').click()" data-i18n="btn_import_json">
+                        📤 CHỌN FILE ĐỂ KHÔI PHỤC
+                    </button>
+                </div>
+            </div>
+            <div style="margin-top: 1.5rem; text-align: right;">
+                <button class="pixel-btn" onclick="closeModal('backupModal')" data-i18n="btn_close">
+                    ĐÓNG
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- RETRO AUDIO EFFECTS, I18N & APP JS -->
+    <script src="/static/js/sound.js"></script>
+    <script src="/static/js/i18n.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
