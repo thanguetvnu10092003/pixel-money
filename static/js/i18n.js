@@ -176,6 +176,7 @@ const i18nData = {
 
         // Subscription Modal
         modal_sub_title: "THÊM DỊCH VỤ ĐỊNH KỲ",
+        modal_sub_edit_title: "CHỈNH SỬA DỊCH VỤ ĐỊNH KỲ",
         label_sub_name: "TÊN DỊCH VỤ / KHOẢN CỐ ĐỊNH:",
         label_sub_day: "NGÀY ĐẾN HẠN HÀNG THÁNG (1 - 31):",
         label_sub_billing_day: "NGÀY ĐẾN HẠN HÀNG THÁNG (1 - 31):",
@@ -184,6 +185,9 @@ const i18nData = {
         cycle_monthly: "Hàng tháng",
         cycle_yearly: "Hàng năm",
         btn_add_sub_confirm: "➕ THÊM THEO DÕI",
+        btn_save_changes: "LƯU THAY ĐỔI",
+        sub_updated: "Đã cập nhật dịch vụ định kỳ thành công!",
+        rule_savings_label: "Tiết kiệm & Tích lũy",
 
         // Currency names & Converter
         curr_name_vnd: "VIỆT NAM ĐỒNG",
@@ -470,6 +474,7 @@ const i18nData = {
 
         // Subscription Modal
         modal_sub_title: "ADD RECURRING SUBSCRIPTION",
+        modal_sub_edit_title: "EDIT RECURRING SUBSCRIPTION",
         label_sub_name: "SERVICE NAME:",
         label_sub_day: "MONTHLY DUE DAY (1 - 31):",
         label_sub_billing_day: "MONTHLY DUE DAY (1 - 31):",
@@ -478,6 +483,9 @@ const i18nData = {
         cycle_monthly: "Monthly",
         cycle_yearly: "Yearly",
         btn_add_sub_confirm: "➕ ADD TRACKING",
+        btn_save_changes: "SAVE CHANGES",
+        sub_updated: "Recurring subscription updated successfully!",
+        rule_savings_label: "Savings & Investments",
 
         // Currency names & Converter
         curr_name_vnd: "VIETNAMESE DONG",
@@ -764,6 +772,7 @@ const i18nData = {
 
         // Subscription Modal
         modal_sub_title: "WIEDERKEHRENDES ABO HINZUFÜGEN",
+        modal_sub_edit_title: "ABONNEMENT BEARBEITEN",
         label_sub_name: "DIENSTNAME / BEZEICHNUNG:",
         label_sub_day: "FÄLLIGKEITSTAG IM MONAT (1 - 31):",
         label_sub_billing_day: "MONATLICHER FÄLLIGKEITSTAG (1 - 31):",
@@ -772,6 +781,9 @@ const i18nData = {
         cycle_monthly: "Monatlich",
         cycle_yearly: "Jährlich",
         btn_add_sub_confirm: "➕ ZU ABOS HINZUFÜGEN",
+        btn_save_changes: "ÄNDERUNGEN SPEICHERN",
+        sub_updated: "Abonnement erfolgreich aktualisiert!",
+        rule_savings_label: "Sparen & Rücklagen",
 
         // Currency names & Converter
         curr_name_vnd: "VIETNAMESISCHER DONG",

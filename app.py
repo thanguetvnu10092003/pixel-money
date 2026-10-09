@@ -598,6 +598,61 @@ def pay_subscription(sub_id):
     conn.close()
     return jsonify({'success': True, 'message': f'Đã ghi nhận thanh toán {sub["name"]} vào chi tiêu hôm nay!'})
 
+@app.route('/api/subscriptions/<int:sub_id>', methods=['GET'])
+def get_subscription_detail(sub_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT s.*, 
+               c.name as category_name, c.icon as category_icon,
+               w.name as wallet_name, w.icon as wallet_icon, w.currency as wallet_curr
+        FROM subscriptions s
+        LEFT JOIN categories c ON s.category_id = c.id
+        LEFT JOIN wallets w ON s.wallet_id = w.id
+        WHERE s.id = ?
+    ''', (sub_id,))
+    sub = cursor.fetchone()
+    conn.close()
+    if not sub:
+        return jsonify({'success': False, 'message': 'Không tìm thấy dịch vụ!'}), 404
+    return jsonify({'success': True, 'subscription': dict(sub)})
+
+@app.route('/api/subscriptions/<int:sub_id>', methods=['PUT'])
+def update_subscription(sub_id):
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
+    name = data.get('name', '').strip()
+    amount = float(data.get('amount', 0))
+    currency = data.get('currency', 'VND').upper()
+    cycle = data.get('cycle', 'monthly')
+    billing_day = int(data.get('billing_day', 1))
+    billing_month = int(data.get('billing_month', datetime.now().month))
+    category_id = data.get('category_id')
+    wallet_id = data.get('wallet_id')
+    note = data.get('note', '').strip()
+    
+    if not name or amount <= 0:
+        return jsonify({'success': False, 'message': 'Vui lòng nhập tên dịch vụ và số tiền hợp lệ!'}), 400
+    if currency not in ['VND', 'EUR', 'USD']:
+        currency = 'VND'
+    if cycle not in ['monthly', 'yearly']:
+        cycle = 'monthly'
+        
+    rates = get_exchange_rates()
+    amount_vnd = convert_currency(amount, currency, 'VND', rates)
+    
+    billing_day = max(1, min(31, billing_day))
+    billing_month = max(1, min(12, billing_month))
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE subscriptions 
+        SET name = ?, amount = ?, currency = ?, amount_vnd = ?, cycle = ?, billing_day = ?, billing_month = ?, category_id = ?, wallet_id = ?, note = ?
+        WHERE id = ?
+    ''', (name, amount, currency, amount_vnd, cycle, billing_day, billing_month, category_id, wallet_id, note, sub_id))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'message': 'Đã cập nhật dịch vụ định kỳ thành công!'})
+
 @app.route('/api/subscriptions/<int:sub_id>', methods=['DELETE'])
 def delete_subscription(sub_id):
     conn = get_db()
@@ -686,41 +741,84 @@ def get_budget_recommendation():
     year_res = cursor.fetchone()
     actual_year_expense = float(year_res['year_expense'] or 0.0)
     
+    # Calculate unpaid fixed subscriptions for this current month
+    cursor.execute('''
+        SELECT amount_vnd, cycle, billing_day, billing_month, last_billed_date
+        FROM subscriptions WHERE is_active = 1
+    ''')
+    active_subs = cursor.fetchall()
+    
+    unpaid_subs_month = 0.0
+    for s in active_subs:
+        last_billed = s['last_billed_date'] or ''
+        billed_this_month = last_billed.startswith(f"{year}-{month:02d}")
+        if not billed_this_month:
+            cycle = s['cycle']
+            if cycle == 'monthly':
+                unpaid_subs_month += float(s['amount_vnd'] or 0.0)
+            elif cycle == 'yearly':
+                b_month = s['billing_month'] or 1
+                if b_month == month:
+                    unpaid_subs_month += float(s['amount_vnd'] or 0.0)
+                else:
+                    unpaid_subs_month += float(s['amount_vnd'] or 0.0) / 12.0
+
     conn.close()
     
-    remaining_month = monthly_budget - actual_month_expense
-    if remaining_month > 0 and days_left_in_month > 0:
-        recommended_safe_daily = round(remaining_month / days_left_in_month, 0)
+    # Net available variable budget after accounting for subscriptions and actual expenses
+    remaining_month_gross = monthly_budget - actual_month_expense
+    # Discretionary budget remaining after reserving for upcoming fixed subscriptions
+    remaining_month_safe = max(0.0, remaining_month_gross - unpaid_subs_month)
+
+    # Smart Daily Safe Allowance for remaining days
+    if remaining_month_safe > 0 and days_left_in_month > 0:
+        recommended_safe_daily = round(remaining_month_safe / days_left_in_month, 0)
     else:
         recommended_safe_daily = 0.0
         
+    today_remaining_daily = max(0.0, recommended_safe_daily - actual_today_expense)
+    today_overspent_daily = max(0.0, actual_today_expense - recommended_safe_daily)
+
+    # Smart Weekly Allowance based on days remaining this week
+    days_left_in_week = max(1, 7 - today.weekday())
     base_daily_budget = round(monthly_budget / days_in_month, 0)
     base_weekly_budget = round(monthly_budget / (days_in_month / 7.0), 0)
-    remaining_weekly = max(0.0, base_weekly_budget - actual_week_expense)
+    remaining_weekly = max(0.0, min(remaining_month_safe, base_weekly_budget - actual_week_expense))
     yearly_budget = monthly_budget * 12.0
     remaining_yearly = yearly_budget - actual_year_expense
     
-    if monthly_budget > 0:
-        hp_percent = max(0, min(100, int((remaining_month / monthly_budget) * 100)))
-    else:
-        hp_percent = 50
+    # Health HP based on discretionary pacing
+    variable_ceiling = max(1.0, monthly_budget - fixed_subscriptions)
+    hp_percent = max(0, min(100, int((remaining_month_safe / variable_ceiling) * 100)))
         
+    # Dynamic 50/30/20 based on user's configured expected income & savings_target_pct
+    income_base = expected_income if expected_income > 0 else (monthly_budget / 0.75)
+    rule_savings = round(income_base * (savings_target_pct / 100.0), 0)
+    rule_needs = round(income_base * 0.50, 0)
+    rule_wants = round(max(0.0, income_base - rule_needs - rule_savings), 0)
+
+    # Intelligent NPC Advice
     status_level = "safe"
-    if hp_percent > 65:
-        status_level = "excellent"
-        npc_avatar = "🛡️"
-        advice_title = "CHI TIÊU RẤT AN TOÀN!"
-        advice_text = f"Hôm nay bạn còn hạn mức tiêu an toàn là {recommended_safe_daily:,.0f} ₫ (hoặc {recommended_safe_daily/rates['EUR_VND']:.2f} € / {recommended_safe_daily/rates['USD_VND']:.2f} $). Tiếp tục giữ vững phong độ nhé!"
-    elif hp_percent > 35:
-        status_level = "warning"
-        npc_avatar = "⚔️"
-        advice_title = "CẦN CHÚ Ý CHI TIÊU"
-        advice_text = f"Hôm nay nên chi tiêu trong khoảng {recommended_safe_daily:,.0f} ₫ ({recommended_safe_daily/rates['EUR_VND']:.2f} €) để đảm bảo không chạm đáy ngân sách cuối tháng."
-    else:
+    if remaining_month_safe <= 0 or hp_percent < 20:
         status_level = "danger"
         npc_avatar = "💀"
         advice_title = "BÁO ĐỘNG NGÂN SÁCH!"
-        advice_text = f"Cảnh báo: Bạn chỉ còn {remaining_month:,.0f} ₫ cho {days_left_in_month} ngày còn lại ({recommended_safe_daily:,.0f} ₫/ngày). Hãy cắt giảm tối đa các khoản ngoài lề!"
+        advice_text = f"Cảnh báo: Bạn chỉ còn {remaining_month_safe:,.0f} ₫ cho {days_left_in_month} ngày còn lại (Đã dự phòng {unpaid_subs_month:,.0f} ₫ dịch vụ cố định). Cần dừng mọi chi tiêu tùy ý!"
+    elif actual_today_expense > recommended_safe_daily and recommended_safe_daily > 0:
+        status_level = "warning"
+        npc_avatar = "⚔️"
+        advice_title = "VƯỢT HẠN MỨC HÔM NAY"
+        advice_text = f"Hôm nay bạn đã chi {actual_today_expense:,.0f} ₫ (vượt {today_overspent_daily:,.0f} ₫ so với định mức ngày {recommended_safe_daily:,.0f} ₫). Hãy tiết chế cho các ngày tới nhé!"
+    elif hp_percent > 65:
+        status_level = "excellent"
+        npc_avatar = "🛡️"
+        advice_title = "CHI TIÊU RẤT AN TOÀN!"
+        advice_text = f"Hôm nay còn {today_remaining_daily:,.0f} ₫ trong hạn mức an toàn {recommended_safe_daily:,.0f} ₫ ({today_remaining_daily/rates['EUR_VND']:.2f} € / {today_remaining_daily/rates['USD_VND']:.2f} $). Tiếp tục giữ vững phong độ nhé!"
+    else:
+        status_level = "warning"
+        npc_avatar = "⚔️"
+        advice_title = "CẦN CHÚ Ý CHI TIÊU"
+        advice_text = f"Hôm nay nên chi trong khoảng {today_remaining_daily:,.0f} ₫ ({today_remaining_daily/rates['EUR_VND']:.2f} €) để đảm bảo không chạm đáy ngân sách cuối tháng."
         
     return jsonify({
         'success': True,
@@ -732,7 +830,8 @@ def get_budget_recommendation():
             'expected_income': expected_income,
             'monthly_budget': monthly_budget,
             'savings_target_pct': savings_target_pct,
-            'fixed_subscriptions': fixed_subscriptions
+            'fixed_subscriptions': fixed_subscriptions,
+            'unpaid_subs_month': unpaid_subs_month
         },
         'actuals': {
             'today_expense_vnd': actual_today_expense,
@@ -743,17 +842,20 @@ def get_budget_recommendation():
         },
         'recommendations': {
             'safe_daily_vnd': recommended_safe_daily,
+            'today_remaining_vnd': today_remaining_daily,
+            'today_overspent_vnd': today_overspent_daily,
             'safe_daily_usd': round(recommended_safe_daily / rates['USD_VND'], 2),
             'safe_daily_eur': round(recommended_safe_daily / rates['EUR_VND'], 2),
             'base_daily_vnd': base_daily_budget,
             'weekly_target_vnd': base_weekly_budget,
             'monthly_target_vnd': monthly_budget,
-            'remaining_month_vnd': remaining_month,
+            'remaining_month_vnd': remaining_month_safe,
+            'remaining_month_gross_vnd': remaining_month_gross,
             'remaining_weekly_vnd': remaining_weekly,
             'rule_50_30_20': {
-                'needs': expected_income * 0.50,
-                'wants': expected_income * 0.30,
-                'savings': expected_income * 0.20
+                'needs': rule_needs,
+                'wants': rule_wants,
+                'savings': rule_savings
             }
         },
         'health': {
@@ -970,7 +1072,7 @@ def export_excel():
         LEFT JOIN wallets w ON t.wallet_id = w.id
         ORDER BY t.date DESC, t.id DESC
     ''')
-    transactions = cursor.fetchall()
+    transactions = [dict(t) for t in cursor.fetchall()]
     
     # 2. Category totals
     cursor.execute('''
@@ -982,7 +1084,7 @@ def export_excel():
         GROUP BY c.id
         ORDER BY expense_vnd DESC
     ''')
-    category_summary = cursor.fetchall()
+    category_summary = [dict(c) for c in cursor.fetchall()]
     
     # 3. Subscriptions
     cursor.execute('''
@@ -992,7 +1094,7 @@ def export_excel():
         LEFT JOIN wallets w ON s.wallet_id = w.id
         ORDER BY s.billing_month ASC, s.billing_day ASC
     ''')
-    subscriptions = cursor.fetchall()
+    subscriptions = [dict(s) for s in cursor.fetchall()]
     
     # 4. Wallets
     wallets = calculate_wallet_balances()
@@ -1307,12 +1409,12 @@ def export_excel():
         c_vnd.font = Font(name='Segoe UI', size=10, bold=True, color='D97706')
         
         ws3.cell(row=s_row, column=5, value=cycle_str).alignment = center_align
-        b_day = s['billing_day']
-        b_month = s.get('billing_month', 1)
-        schedule_str = f"Ngày {b_day}/{b_month} hàng năm" if s['cycle'] == 'yearly' else f"Ngày {b_day} hàng tháng"
+        b_day = s.get('billing_day', 1)
+        b_month = s.get('billing_month', 1) or 1
+        schedule_str = f"Ngày {b_day}/{b_month} hàng năm" if s.get('cycle') == 'yearly' else f"Ngày {b_day} hàng tháng"
         ws3.cell(row=s_row, column=6, value=schedule_str).alignment = center_align
-        ws3.cell(row=s_row, column=7, value=s['wallet_name'] or 'Mặc định').alignment = center_align
-        ws3.cell(row=s_row, column=8, value=s['note'] or '')
+        ws3.cell(row=s_row, column=7, value=s.get('wallet_name') or 'Mặc định').alignment = center_align
+        ws3.cell(row=s_row, column=8, value=s.get('note') or '')
         
         for col_idx in range(1, 9):
             cell = ws3.cell(row=s_row, column=col_idx)
@@ -1388,6 +1490,13 @@ def import_json():
         conn = get_db()
         cursor = conn.cursor()
         
+        if 'categories' in data and data['categories']:
+            for c in data['categories']:
+                cursor.execute('''
+                    INSERT OR REPLACE INTO categories (id, name, type, icon, color)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (c.get('id'), c['name'], c.get('type', 'expense'), c.get('icon', '🏷️'), c.get('color', '#00f0ff')))
+
         if 'wallets' in data and data['wallets']:
             for w in data['wallets']:
                 cursor.execute('''
@@ -1408,6 +1517,27 @@ def import_json():
                     INSERT OR REPLACE INTO subscriptions (id, name, amount, currency, amount_vnd, cycle, billing_day, billing_month, category_id, wallet_id, is_active, note)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (s.get('id'), s['name'], s['amount'], s.get('currency', 'VND'), s.get('amount_vnd', 0), s.get('cycle', 'monthly'), s.get('billing_day', 1), s.get('billing_month', 1), s.get('category_id'), s.get('wallet_id'), s.get('is_active', 1), s.get('note')))
+
+        transfers_data = data.get('transfers') or data.get('wallet_transfers') or []
+        for tr in transfers_data:
+            cursor.execute('''
+                INSERT OR REPLACE INTO wallet_transfers (id, from_wallet_id, to_wallet_id, amount, date, note)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (tr.get('id'), tr['from_wallet_id'], tr['to_wallet_id'], tr['amount'], tr['date'], tr.get('note')))
+
+        if 'budgets' in data and data['budgets']:
+            for b in data['budgets']:
+                cursor.execute('''
+                    INSERT OR REPLACE INTO budgets (id, period, expected_income, monthly_budget, savings_target_pct, month_year)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (b.get('id'), b.get('period', 'month'), b.get('expected_income', 18000000), b.get('monthly_budget', 12000000), b.get('savings_target_pct', 25), b.get('month_year', 'default')))
+
+        if 'settings' in data and data['settings']:
+            for st in data['settings']:
+                cursor.execute('''
+                    INSERT OR REPLACE INTO settings (key, value)
+                    VALUES (?, ?)
+                ''', (st['key'], str(st['value'])))
                 
         conn.commit()
         conn.close()

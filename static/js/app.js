@@ -8,6 +8,7 @@ let selectedWalletFilter = null;
 let categoryChartInstance = null;
 let timelineChartInstance = null;
 let currentEditingTxId = null;
+let currentEditingSubId = null;
 let currentBudgetModalCurrency = currentCurrency;
 let savedBudgetVnd = {
     expected_income: 18000000,
@@ -578,8 +579,20 @@ async function loadBudgetHealth() {
         const bdRuleNeeds = document.getElementById('bdRuleNeeds');
         const bdRuleWants = document.getElementById('bdRuleWants');
         const bdRuleSavings = document.getElementById('bdRuleSavings');
+        const bdRuleSavingsLabel = document.getElementById('bdRuleSavingsLabel');
 
-        if (bdSafeDay) bdSafeDay.textContent = formatMoney(convertCurrency(recommendations.safe_daily_vnd, 'VND', currentCurrency), currentCurrency);
+        const todaySafeRemaining = recommendations.today_remaining_vnd !== undefined 
+            ? recommendations.today_remaining_vnd 
+            : Math.max(0, recommendations.safe_daily_vnd - actuals.today_expense_vnd);
+
+        if (bdSafeDay) {
+            bdSafeDay.textContent = formatMoney(convertCurrency(todaySafeRemaining, 'VND', currentCurrency), currentCurrency);
+            if (actuals.today_expense_vnd > recommendations.safe_daily_vnd && recommendations.safe_daily_vnd > 0) {
+                bdSafeDay.style.color = 'var(--color-danger)';
+            } else {
+                bdSafeDay.style.color = 'var(--color-accent)';
+            }
+        }
         if (bdSpentToday) bdSpentToday.textContent = formatMoney(convertCurrency(actuals.today_expense_vnd, 'VND', currentCurrency), currentCurrency);
         if (bdRemWeek) bdRemWeek.textContent = formatMoney(convertCurrency(recommendations.remaining_weekly_vnd, 'VND', currentCurrency), currentCurrency);
         if (bdRemMonth) bdRemMonth.textContent = formatMoney(convertCurrency(recommendations.remaining_month_vnd, 'VND', currentCurrency), currentCurrency);
@@ -588,6 +601,10 @@ async function loadBudgetHealth() {
         if (bdRuleNeeds) bdRuleNeeds.textContent = formatMoney(convertCurrency(recommendations.rule_50_30_20.needs, 'VND', currentCurrency), currentCurrency);
         if (bdRuleWants) bdRuleWants.textContent = formatMoney(convertCurrency(recommendations.rule_50_30_20.wants, 'VND', currentCurrency), currentCurrency);
         if (bdRuleSavings) bdRuleSavings.textContent = formatMoney(convertCurrency(recommendations.rule_50_30_20.savings, 'VND', currentCurrency), currentCurrency);
+        if (bdRuleSavingsLabel) {
+            const savingsPct = Math.round(settings.savings_target_pct || 25);
+            bdRuleSavingsLabel.textContent = `💰 ${savingsPct}% ${t('rule_savings_label') || 'Tiết kiệm & Tích lũy'}:`;
+        }
 
         // Store persistent VND budget settings and update budget modal display
         savedBudgetVnd = {
@@ -978,6 +995,9 @@ async function loadSubscriptions() {
                     <div style="display: flex; gap: 0.35rem;">
                         <button class="pixel-btn pixel-btn-sm pixel-btn-success" onclick="paySubscription(${sub.id})" title="${t('sub_btn_pay')}">
                             ${t('sub_btn_pay')}
+                        </button>
+                        <button class="pixel-btn pixel-btn-sm pixel-btn-primary" onclick="openEditSubModal(${sub.id})" title="${t('btn_edit') || 'Sửa'}">
+                            ✏️
                         </button>
                         <button class="pixel-btn pixel-btn-sm pixel-btn-danger" onclick="deleteSubscription(${sub.id})" title="Delete">
                             🗑️
@@ -1639,6 +1659,13 @@ function selectYearlyPreset(day, month) {
 // 16. ACTIONS: SUBSCRIPTIONS
 function openAddSubModal() {
     SoundEffects.playClick();
+    currentEditingSubId = null;
+
+    const titleEl = document.getElementById('subModalTitle');
+    if (titleEl) titleEl.textContent = t('modal_sub_title');
+    const submitBtn = document.getElementById('btnSaveSubscription');
+    if (submitBtn) submitBtn.innerHTML = `➕ ${t('btn_add_sub_confirm')}`;
+
     document.getElementById('subName').value = '';
     document.getElementById('subAmount').value = '';
     document.getElementById('subCurrency').value = currentCurrency;
@@ -1653,11 +1680,61 @@ function openAddSubModal() {
     }
     document.getElementById('subNote').value = '';
     populateWalletSelects();
+    populateCategorySelect('expense');
     handleSubCycleChange();
     renderSubCalendarTable(today, defaultDay);
     selectSubBillingDay(defaultDay, defaultMonth);
     updateTodayDisplay();
     document.getElementById('subModal').classList.add('active');
+}
+
+async function openEditSubModal(subId) {
+    SoundEffects.playClick();
+    currentEditingSubId = subId;
+
+    try {
+        const res = await fetch(`/api/subscriptions/${subId}`);
+        const data = await res.json();
+        if (!data.success || !data.subscription) {
+            showToast('Không tìm thấy thông tin dịch vụ!', '⚠️');
+            return;
+        }
+        const sub = data.subscription;
+
+        const titleEl = document.getElementById('subModalTitle');
+        if (titleEl) titleEl.textContent = t('modal_sub_edit_title');
+        const submitBtn = document.getElementById('btnSaveSubscription');
+        if (submitBtn) submitBtn.innerHTML = `💾 ${t('btn_save_changes')}`;
+
+        document.getElementById('subName').value = sub.name || '';
+        document.getElementById('subAmount').value = sub.amount || '';
+        document.getElementById('subCurrency').value = sub.currency || 'VND';
+        document.getElementById('subCycle').value = sub.cycle || 'monthly';
+        
+        populateWalletSelects();
+        populateCategorySelect('expense');
+        
+        if (sub.wallet_id) document.getElementById('subWallet').value = sub.wallet_id;
+        if (sub.category_id) document.getElementById('subCategory').value = sub.category_id;
+        document.getElementById('subNote').value = sub.note || '';
+
+        const sDay = sub.billing_day || 1;
+        const sMonth = sub.billing_month || (new Date().getMonth() + 1);
+        document.getElementById('subDay').value = sDay;
+        if (document.getElementById('subMonth')) {
+            document.getElementById('subMonth').value = sMonth;
+        }
+
+        currentSubCalDate = new Date(new Date().getFullYear(), sMonth - 1, 1);
+        handleSubCycleChange();
+        renderSubCalendarTable(currentSubCalDate, sDay);
+        selectSubBillingDay(sDay, sMonth);
+        updateTodayDisplay();
+
+        document.getElementById('subModal').classList.add('active');
+    } catch (e) {
+        console.error('Error opening edit subscription modal:', e);
+    }
 }
 
 async function saveSubscription() {
@@ -1677,9 +1754,12 @@ async function saveSubscription() {
         return;
     }
 
+    const url = currentEditingSubId ? `/api/subscriptions/${currentEditingSubId}` : '/api/subscriptions';
+    const method = currentEditingSubId ? 'PUT' : 'POST';
+
     try {
-        const res = await fetch('/api/subscriptions', {
-            method: 'POST',
+        const res = await fetch(url, {
+            method: method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, amount, currency, cycle, billing_day, billing_month, category_id, wallet_id, note })
         });
@@ -1687,9 +1767,12 @@ async function saveSubscription() {
         if (data.success) {
             SoundEffects.playSuccess();
             closeModal('subModal');
-            showToast(t('sub_saved'), '📺');
+            showToast(currentEditingSubId ? t('sub_updated') : t('sub_saved'), '📺');
+            currentEditingSubId = null;
             loadSubscriptions();
             loadBudgetHealth();
+        } else {
+            alert(data.message || 'Lỗi lưu dịch vụ!');
         }
     } catch (e) {
         console.error(e);
@@ -1838,6 +1921,7 @@ async function saveBudgetSettings() {
             closeModal('budgetModal');
             showToast(t('budget_updated'), '🎯');
             loadBudgetHealth();
+            loadDashboard();
         } else {
             alert(data.message);
         }
