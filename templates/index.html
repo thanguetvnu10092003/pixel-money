@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ví Tiền Pixel - Quản Lý Chi Tiêu & Đa Tiền Tệ (EUR • USD • VNĐ)</title>
+    <title data-i18n="page_title">Ví Tiền Pixel - Quản Lý Chi Tiêu & Đa Tiền Tệ (EUR • USD • VNĐ)</title>
     <!-- Pixel Favicon Emoji -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪙</text></svg>">
     <!-- Local & Google Fonts & CSS -->
@@ -90,7 +90,7 @@
                 </div>
                 <div class="npc-dialogue-box">
                     <div class="npc-dialogue-title" id="npcAdviceTitle" data-i18n="npc_advice_label">LỜI KHUYÊN HÔM NAY:</div>
-                    <div id="npcAdviceText">Đang tính toán ngân sách an toàn...</div>
+                    <div id="npcAdviceText" data-i18n="npc_calculating">Đang tính toán ngân sách an toàn...</div>
                 </div>
             </div>
             <div>
@@ -153,7 +153,7 @@
                     <span class="stat-icon">💸</span>
                 </div>
                 <div class="stat-amount" id="kpiTotalExpense" style="color: var(--color-danger);">0 ₫</div>
-                <div class="stat-sub" id="kpiTxCount">0 giao dịch</div>
+                <div class="stat-sub" id="kpiTxCount" data-i18n="tx_initial_count">0 giao dịch</div>
             </div>
             <!-- Total income in period -->
             <div class="stat-card card-income">
@@ -388,16 +388,16 @@
                         ₫ VNĐ
                     </button>
                     <button type="button" class="type-radio-btn tx-curr-btn" data-curr="EUR" onclick="setTxModalCurrency('EUR')">
-                        € EUR (cents)
+                        € EUR <span data-i18n="cents_label">(cents)</span>
                     </button>
                     <button type="button" class="type-radio-btn tx-curr-btn" data-curr="USD" onclick="setTxModalCurrency('USD')">
-                        $ USD (cents)
+                        $ USD <span data-i18n="cents_label">(cents)</span>
                     </button>
                 </div>
             </div>
             <div class="form-group">
                 <label data-i18n="label_amount">SỐ TIỀN:</label>
-                <input type="number" id="txAmount" class="form-control" placeholder="Ví dụ: 50000" min="0.01" step="0.01" required>
+                <input type="number" id="txAmount" class="form-control" placeholder="Ví dụ: 50000" min="0.01" step="0.01" required data-i18n-ph="ph_tx_amount">
             </div>
             <div class="form-group">
                 <label data-i18n="label_wallet">NGUỒN TIỀN / VÍ:</label>
@@ -413,7 +413,7 @@
             </div>
             <div class="form-group">
                 <label data-i18n="label_note">GHI CHÚ / MÔ TẢ:</label>
-                <input type="text" id="txNote" class="form-control" placeholder="Ví dụ: Ăn trưa, Cà phê, Mua sách...">
+                <input type="text" id="txNote" class="form-control" placeholder="Ví dụ: Ăn trưa, Cà phê, Mua sách..." data-i18n-ph="ph_tx_note">
             </div>
             <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
                 <button class="pixel-btn pixel-btn-primary" style="flex: 1;" onclick="saveTransaction(event)" data-i18n="btn_save_tx">
@@ -440,7 +440,7 @@
             </div>
             <div class="form-group">
                 <label data-i18n="label_deposit_amount">SỐ TIỀN NẠP:</label>
-                <input type="number" id="depositAmount" class="form-control" placeholder="Ví dụ: 1000000" min="0.01" step="0.01" required>
+                <input type="number" id="depositAmount" class="form-control" placeholder="Ví dụ: 1000000" min="0.01" step="0.01" required data-i18n-ph="ph_deposit_amount">
             </div>
             <div class="form-group">
                 <label data-i18n="label_deposit_cat">DANH MỤC THU NHẬP / NGUỒN ĐẾN:</label>
@@ -452,7 +452,7 @@
             </div>
             <div class="form-group">
                 <label data-i18n="label_note">GHI CHÚ:</label>
-                <input type="text" id="depositNote" class="form-control" placeholder="Ví dụ: Lương, Thưởng, Bán hàng online...">
+                <input type="text" id="depositNote" class="form-control" placeholder="Ví dụ: Lương, Thưởng, Bán hàng online..." data-i18n-ph="ph_deposit_note">
             </div>
             <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
                 <button class="pixel-btn pixel-btn-success" style="flex: 1;" onclick="saveDeposit(event)" data-i18n="btn_confirm_deposit">
@@ -482,7 +482,7 @@
             </div>
             <div class="form-group">
                 <label data-i18n="label_transfer_amount">SỐ TIỀN CHUYỂN (THEO NGUỒN GỬI):</label>
-                <input type="number" id="transferAmount" class="form-control" placeholder="Ví dụ: 50" min="0.01" step="0.01" required>
+                <input type="number" id="transferAmount" class="form-control" placeholder="Ví dụ: 50" min="0.01" step="0.01" required data-i18n-ph="ph_transfer_amount">
                 <small style="color: var(--text-muted); font-size: 0.72rem;" data-i18n="transfer_hint">Hệ thống sẽ tự động quy đổi tỷ giá nếu 2 ví khác đơn vị tiền tệ (EUR, USD, VND).</small>
             </div>
             <div class="form-group">
@@ -491,7 +491,7 @@
             </div>
             <div class="form-group">
                 <label data-i18n="label_note">GHI CHÚ:</label>
-                <input type="text" id="transferNote" class="form-control" placeholder="Ví dụ: Rút tiền mặt, Nạp thẻ Euro...">
+                <input type="text" id="transferNote" class="form-control" placeholder="Ví dụ: Rút tiền mặt, Nạp thẻ Euro..." data-i18n-ph="ph_transfer_note">
             </div>
             <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
                 <button class="pixel-btn pixel-btn-accent" style="flex: 1;" onclick="saveTransfer(event)" data-i18n="btn_confirm_transfer">
@@ -513,24 +513,24 @@
             </div>
             <div class="form-group">
                 <label data-i18n="label_wallet_name">TÊN NGUỒN TIỀN:</label>
-                <input type="text" id="walletName" class="form-control" placeholder="Ví dụ: MB Bank, Revolut Euro, PayPal USD..." required>
+                <input type="text" id="walletName" class="form-control" placeholder="Ví dụ: MB Bank, Revolut Euro, PayPal USD..." required data-i18n-ph="ph_wallet_name">
             </div>
             <div class="form-group">
                 <label data-i18n="label_wallet_curr">LOẠI TIỀN TỆ CỦA VÍ:</label>
                 <select id="walletCurrency" class="form-control">
-                    <option value="VND">₫ VNĐ (Việt Nam Đồng)</option>
-                    <option value="EUR">€ EUR (Euro - hỗ trợ cents)</option>
-                    <option value="USD">$ USD (Đô la Mỹ - hỗ trợ cents)</option>
+                    <option value="VND" data-i18n="opt_curr_vnd_full">₫ VNĐ (Việt Nam Đồng)</option>
+                    <option value="EUR" data-i18n="opt_curr_eur_full">€ EUR (Euro - hỗ trợ cents)</option>
+                    <option value="USD" data-i18n="opt_curr_usd_full">$ USD (Đô la Mỹ - hỗ trợ cents)</option>
                 </select>
             </div>
             <div class="form-group">
                 <label data-i18n="label_wallet_type">LOẠI NGUỒN:</label>
                 <select id="walletType" class="form-control">
-                    <option value="bank">🏦 Tài khoản Ngân hàng</option>
-                    <option value="cash">💵 Tiền mặt</option>
-                    <option value="ewallet">📱 Ví điện tử</option>
-                    <option value="credit">💳 Thẻ tín dụng</option>
-                    <option value="savings">🐷 Tiết kiệm / Heo đất</option>
+                    <option value="bank" data-i18n="wallet_type_bank">🏦 Tài khoản Ngân hàng</option>
+                    <option value="cash" data-i18n="wallet_type_cash">💵 Tiền mặt</option>
+                    <option value="ewallet" data-i18n="wallet_type_ewallet">📱 Ví điện tử</option>
+                    <option value="credit" data-i18n="wallet_type_credit">💳 Thẻ tín dụng</option>
+                    <option value="savings" data-i18n="wallet_type_savings">🐷 Tiết kiệm / Heo đất</option>
                 </select>
             </div>
             <div class="form-group">
@@ -547,7 +547,7 @@
             </div>
             <div class="form-group">
                 <label data-i18n="label_note">GHI CHÚ:</label>
-                <input type="text" id="walletNote" class="form-control" placeholder="Mục đích sử dụng nguồn tiền này...">
+                <input type="text" id="walletNote" class="form-control" placeholder="Mục đích sử dụng nguồn tiền này..." data-i18n-ph="ph_wallet_note">
             </div>
             <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
                 <button class="pixel-btn pixel-btn-primary" style="flex: 1;" onclick="saveNewWallet()" data-i18n="btn_create_wallet">
@@ -588,15 +588,15 @@
                 <!-- Conversion Results Box -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; text-align: center;">
                     <div style="background: var(--bg-card); border: 2px solid var(--border-color); padding: 0.75rem 0.5rem;">
-                        <span style="font-family: var(--font-pixel); font-size: 0.65rem; color: var(--color-primary); display: block;">VIỆT NAM ĐỒNG</span>
+                        <span style="font-family: var(--font-pixel); font-size: 0.65rem; color: var(--color-primary); display: block;" data-i18n="curr_name_vnd">VIỆT NAM ĐỒNG</span>
                         <span style="font-family: var(--font-pixel); font-size: 0.95rem; font-weight: bold; color: var(--text-highlight); margin-top: 0.3rem; display: block;" id="resVND">0 ₫</span>
                     </div>
                     <div style="background: var(--bg-card); border: 2px solid var(--border-color); padding: 0.75rem 0.5rem;">
-                        <span style="font-family: var(--font-pixel); font-size: 0.65rem; color: var(--color-accent); display: block;">EURO (EUR CENTS)</span>
+                        <span style="font-family: var(--font-pixel); font-size: 0.65rem; color: var(--color-accent); display: block;" data-i18n="curr_name_eur">EURO (EUR CENTS)</span>
                         <span style="font-family: var(--font-pixel); font-size: 0.95rem; font-weight: bold; color: var(--text-highlight); margin-top: 0.3rem; display: block;" id="resEUR">0.00 €</span>
                     </div>
                     <div style="background: var(--bg-card); border: 2px solid var(--border-color); padding: 0.75rem 0.5rem;">
-                        <span style="font-family: var(--font-pixel); font-size: 0.65rem; color: var(--color-success); display: block;">ĐÔ LA MỸ (USD)</span>
+                        <span style="font-family: var(--font-pixel); font-size: 0.65rem; color: var(--color-success); display: block;" data-i18n="curr_name_usd">ĐÔ LA MỸ (USD)</span>
                         <span style="font-family: var(--font-pixel); font-size: 0.95rem; font-weight: bold; color: var(--text-highlight); margin-top: 0.3rem; display: block;" id="resUSD">$ 0.00</span>
                     </div>
                 </div>
@@ -612,11 +612,11 @@
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
                     <div>
-                        <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">1 USD = ? VNĐ</label>
+                        <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;" data-i18n="rate_label_usd">1 USD = ? VNĐ</label>
                         <input type="number" id="rateUsdInput" class="form-control" value="25400" step="100">
                     </div>
                     <div>
-                        <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">1 EUR = ? VNĐ</label>
+                        <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;" data-i18n="rate_label_eur">1 EUR = ? VNĐ</label>
                         <input type="number" id="rateEurInput" class="form-control" value="27600" step="100">
                     </div>
                 </div>
@@ -642,19 +642,19 @@
             </div>
             <div class="form-group">
                 <label data-i18n="label_sub_name">TÊN DỊCH VỤ / KHOẢN CỐ ĐỊNH:</label>
-                <input type="text" id="subName" class="form-control" placeholder="Ví dụ: Netflix, Spotify, iCloud, Tiền phòng..." required>
+                <input type="text" id="subName" class="form-control" placeholder="Ví dụ: Netflix, Spotify, iCloud, Tiền phòng..." required data-i18n-ph="ph_sub_name">
             </div>
             <div class="form-group">
                 <label data-i18n="label_currency">TIỀN TỆ:</label>
                 <select id="subCurrency" class="form-control">
                     <option value="VND">₫ VNĐ</option>
-                    <option value="EUR">€ EUR (hỗ trợ cents)</option>
-                    <option value="USD">$ USD (hỗ trợ cents)</option>
+                    <option value="EUR" data-i18n="opt_curr_eur_short">€ EUR (hỗ trợ cents)</option>
+                    <option value="USD" data-i18n="opt_curr_usd_short">$ USD (hỗ trợ cents)</option>
                 </select>
             </div>
             <div class="form-group">
                 <label data-i18n="label_amount">SỐ TIỀN:</label>
-                <input type="number" id="subAmount" class="form-control" placeholder="Ví dụ: 10.99 hoặc 260000" min="0.01" step="0.01" required>
+                <input type="number" id="subAmount" class="form-control" placeholder="Ví dụ: 10.99 hoặc 260000" min="0.01" step="0.01" required data-i18n-ph="ph_sub_amount">
             </div>
             <div class="form-group">
                 <label data-i18n="label_sub_wallet">TRÍCH TỪ NGUỒN TIỀN:</label>
@@ -677,7 +677,7 @@
             </div>
             <div class="form-group">
                 <label data-i18n="label_note">GHI CHÚ:</label>
-                <input type="text" id="subNote" class="form-control" placeholder="Gói dịch vụ, người cùng share...">
+                <input type="text" id="subNote" class="form-control" placeholder="Gói dịch vụ, người cùng share..." data-i18n-ph="ph_sub_note">
             </div>
             <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
                 <button class="pixel-btn pixel-btn-accent" style="flex: 1;" onclick="saveSubscription()" data-i18n="btn_add_sub_confirm">
@@ -704,10 +704,10 @@
                         ₫ VNĐ
                     </button>
                     <button type="button" class="type-radio-btn budget-curr-btn" data-curr="EUR" onclick="setBudgetModalCurrency('EUR')">
-                        € EUR (cents)
+                        € EUR <span data-i18n="cents_label">(cents)</span>
                     </button>
                     <button type="button" class="type-radio-btn budget-curr-btn" data-curr="USD" onclick="setBudgetModalCurrency('USD')">
-                        $ USD (cents)
+                        $ USD <span data-i18n="cents_label">(cents)</span>
                     </button>
                 </div>
             </div>
@@ -723,7 +723,7 @@
             </div>
             <div class="form-group">
                 <label data-i18n="label_savings_pct">MỤC TIÊU TIẾT KIỆM (% THU NHẬP):</label>
-                <input type="number" id="setSavingsPct" class="form-control" placeholder="25" min="0" max="90">
+                <input type="number" id="setSavingsPct" class="form-control" placeholder="25" min="0" max="90" data-i18n-ph="ph_savings_pct">
                 <small style="color: var(--text-muted); font-size: 0.75rem;" data-i18n="hint_savings_pct">Ví dụ: 20% hoặc 25% thu nhập</small>
             </div>
             <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
@@ -746,14 +746,14 @@
             </div>
             <div style="display: flex; flex-direction: column; gap: 1rem;">
                 <div style="background: var(--bg-input); border: 2px solid var(--border-light); padding: 1rem;">
-                    <h4 style="font-family: var(--font-pixel); font-size: 0.82rem; color: var(--color-success); margin-bottom: 0.4rem;">
+                    <h4 style="font-family: var(--font-pixel); font-size: 0.82rem; color: var(--color-success); margin-bottom: 0.4rem;" data-i18n="backup_excel_title">
                         📊 XUẤT FILE EXCEL ĐA TRANG (EUR • USD • VNĐ)
                     </h4>
                     <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-                        Báo cáo Excel đa tiền tệ với định dạng cents chuyên nghiệp cho EUR và USD:
-                        <br>• <b>Sheet 1</b>: Tổng Quan, Tỷ giá quy đổi & Thống kê ví.
-                        <br>• <b>Sheet 2</b>: Sổ thu chi chi tiết hiển thị tiền gốc & quy đổi VNĐ.
-                        <br>• <b>Sheet 3</b>: Quản lý dịch vụ đăng ký định kỳ.
+                        <span data-i18n="backup_excel_desc">Báo cáo Excel đa tiền tệ với định dạng cents chuyên nghiệp cho EUR và USD:</span>
+                        <br><span data-i18n="backup_sheet1">• Sheet 1: Tổng Quan, Tỷ giá quy đổi & Thống kê ví.</span>
+                        <br><span data-i18n="backup_sheet2">• Sheet 2: Sổ thu chi chi tiết hiển thị tiền gốc & quy đổi VNĐ.</span>
+                        <br><span data-i18n="backup_sheet3">• Sheet 3: Quản lý dịch vụ đăng ký định kỳ.</span>
                     </p>
                     <a href="/api/export/excel" class="pixel-btn pixel-btn-success pixel-btn-sm" download data-i18n="btn_download_excel">
                         📥 TẢI BÁO CÁO EXCEL ĐẸP MẮT
@@ -761,10 +761,10 @@
                 </div>
 
                 <div style="background: var(--bg-input); border: 2px solid var(--border-light); padding: 1rem;">
-                    <h4 style="font-family: var(--font-pixel); font-size: 0.82rem; color: var(--color-primary); margin-bottom: 0.4rem;">
+                    <h4 style="font-family: var(--font-pixel); font-size: 0.82rem; color: var(--color-primary); margin-bottom: 0.4rem;" data-i18n="backup_json_title">
                         💾 SAO LƯU TOÀN BỘ HỆ THỐNG (.JSON)
                     </h4>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;" data-i18n="backup_json_desc">
                         Lưu trữ an toàn các danh mục, giao dịch, số dư ví, dịch vụ và hạn mức tài chính.
                     </p>
                     <a href="/api/backup/export_json" class="pixel-btn pixel-btn-primary pixel-btn-sm" download data-i18n="btn_download_json">
@@ -773,10 +773,10 @@
                 </div>
 
                 <div style="background: var(--bg-input); border: 2px solid var(--border-light); padding: 1rem;">
-                    <h4 style="font-family: var(--font-pixel); font-size: 0.82rem; color: var(--color-warning); margin-bottom: 0.4rem;">
+                    <h4 style="font-family: var(--font-pixel); font-size: 0.82rem; color: var(--color-warning); margin-bottom: 0.4rem;" data-i18n="backup_restore_title">
                         🔄 PHỤC HỒI TỪ FILE JSON
                     </h4>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;" data-i18n="backup_restore_desc">
                         Khôi phục dữ liệu đã sao lưu trước đó từ máy của bạn.
                     </p>
                     <input type="file" id="importJsonInput" accept=".json" style="display: none;" onchange="handleImportJson(this)">

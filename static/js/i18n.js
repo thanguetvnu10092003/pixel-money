@@ -177,11 +177,26 @@ const i18nData = {
         // Subscription Modal
         modal_sub_title: "THÊM DỊCH VỤ ĐỊNH KỲ",
         label_sub_name: "TÊN DỊCH VỤ / KHOẢN CỐ ĐỊNH:",
+        label_sub_day: "NGÀY ĐẾN HẠN HÀNG THÁNG (1 - 31):",
         label_sub_billing_day: "NGÀY ĐẾN HẠN HÀNG THÁNG (1 - 31):",
+        label_sub_wallet: "TRÍCH TỪ NGUỒN TIỀN:",
         label_sub_cycle: "CHU KỲ GIA HẠN:",
         cycle_monthly: "Hàng tháng",
         cycle_yearly: "Hàng năm",
         btn_add_sub_confirm: "➕ THÊM THEO DÕI",
+
+        // Currency names & Converter
+        curr_name_vnd: "VIỆT NAM ĐỒNG",
+        curr_name_eur: "EURO (EUR CENTS)",
+        curr_name_usd: "ĐÔ LA MỸ (USD)",
+        rate_label_usd: "1 USD = ? VNĐ",
+        rate_label_eur: "1 EUR = ? VNĐ",
+        opt_curr_vnd_full: "₫ VNĐ (Việt Nam Đồng)",
+        opt_curr_eur_full: "€ EUR (Euro - hỗ trợ cents)",
+        opt_curr_usd_full: "$ USD (Đô la Mỹ - hỗ trợ cents)",
+        opt_curr_eur_short: "€ EUR (hỗ trợ cents)",
+        opt_curr_usd_short: "$ USD (hỗ trợ cents)",
+        cents_label: "(cents)",
 
         // Budget Settings Modal
         modal_budget_title: "THIẾT LẬP MỤC TIÊU & HẠN MỨC",
@@ -197,9 +212,57 @@ const i18nData = {
 
         // Backup Modal
         modal_backup_title: "SAO LƯU & XUẤT BÁO CÁO EXCEL",
+        backup_excel_title: "📊 XUẤT FILE EXCEL ĐA TRANG (EUR • USD • VNĐ)",
+        backup_excel_desc: "Báo cáo Excel đa tiền tệ với định dạng cents chuyên nghiệp cho EUR và USD:",
+        backup_sheet1: "• Sheet 1: Tổng Quan, Tỷ giá quy đổi & Thống kê ví.",
+        backup_sheet2: "• Sheet 2: Sổ thu chi chi tiết hiển thị tiền gốc & quy đổi VNĐ.",
+        backup_sheet3: "• Sheet 3: Quản lý dịch vụ đăng ký định kỳ.",
         btn_download_excel: "📥 TẢI BÁO CÁO EXCEL ĐẸP MẮT",
+        backup_json_title: "💾 SAO LƯU TOÀN BỘ HỆ THỐNG (.JSON)",
+        backup_json_desc: "Lưu trữ an toàn các danh mục, giao dịch, số dư ví, dịch vụ và hạn mức tài chính.",
         btn_download_json: "📥 TẢI FILE SAO LƯU .JSON",
+        backup_restore_title: "🔄 PHỤC HỒI TỪ FILE JSON",
+        backup_restore_desc: "Khôi phục dữ liệu đã sao lưu trước đó từ máy của bạn.",
         btn_import_json: "📤 CHỌN FILE ĐỂ KHÔI PHỤC",
+
+        // Placeholders
+        ph_tx_amount: "Ví dụ: 50000",
+        ph_tx_note: "Ví dụ: Ăn trưa, Cà phê, Mua sách...",
+        ph_deposit_amount: "Ví dụ: 1000000",
+        ph_deposit_note: "Ví dụ: Lương, Thưởng, Bán hàng online...",
+        ph_transfer_amount: "Ví dụ: 50",
+        ph_transfer_note: "Ví dụ: Rút tiền mặt, Nạp thẻ Euro...",
+        ph_wallet_name: "Ví dụ: MB Bank, Revolut Euro, PayPal USD...",
+        ph_wallet_note: "Mục đích sử dụng nguồn tiền này...",
+        ph_sub_name: "Ví dụ: Netflix, Spotify, iCloud, Tiền phòng...",
+        ph_sub_amount: "Ví dụ: 10.99 hoặc 260000",
+        ph_sub_note: "Gói dịch vụ, người cùng share...",
+        ph_savings_pct: "25",
+
+        // Alerts & Notification Toasts
+        alert_invalid_amount: "Vui lòng nhập số tiền hợp lệ (> 0)!",
+        alert_transfer_same_wallet: "Nguồn gửi và nguồn nhận phải khác nhau!",
+        alert_enter_wallet_name: "Vui lòng nhập tên nguồn tiền / ví!",
+        alert_enter_sub_details: "Vui lòng nhập tên dịch vụ và số tiền hợp lệ!",
+        alert_enter_budget_details: "Vui lòng nhập thu nhập và ngân sách hợp lệ (> 0)!",
+        tx_saved: "Đã lưu giao dịch!",
+        tx_updated: "Đã cập nhật giao dịch!",
+        rates_saved: "Đã lưu tỷ giá tùy chỉnh!",
+        sub_saved: "Đã lưu dịch vụ định kỳ!",
+        backup_restored: "Khôi phục dữ liệu thành công!",
+        tx_initial_count: "0 giao dịch",
+        page_title: "Ví Tiền Pixel - Quản Lý Chi Tiêu & Đa Tiền Tệ (EUR • USD • VNĐ)",
+        npc_calculating: "Đang tính toán ngân sách an toàn...",
+        wallet_type_bank: "🏦 Tài khoản Ngân hàng",
+        wallet_type_cash: "💵 Tiền mặt",
+        wallet_type_ewallet: "📱 Ví điện tử",
+        wallet_type_credit: "💳 Thẻ tín dụng",
+        wallet_type_savings: "🐷 Tiết kiệm / Heo đất",
+        wallet_created: "Đã tạo nguồn tiền mới!",
+        deposit_success: "Nạp tiền vào ví thành công!",
+        transfer_success: "Chuyển tiền giữa các ví thành công!",
+        rates_synced: "Đã đồng bộ tỷ giá online thành công!",
+        sub_paid: "Đã thanh toán dịch vụ định kỳ!",
 
         other: "Khác",
         footer_text: "VÍ TIỀN PIXEL • PHÁT TRIỂN DÀNH CHO QUẢN LÝ TÀI CHÍNH CÁ NHÂN ĐA TIỀN TỆ (EUR • USD • VNĐ) • 2026"
@@ -380,11 +443,26 @@ const i18nData = {
         // Subscription Modal
         modal_sub_title: "ADD RECURRING SUBSCRIPTION",
         label_sub_name: "SERVICE NAME:",
+        label_sub_day: "MONTHLY DUE DAY (1 - 31):",
         label_sub_billing_day: "MONTHLY DUE DAY (1 - 31):",
+        label_sub_wallet: "DEBIT FROM WALLET:",
         label_sub_cycle: "BILLING CYCLE:",
         cycle_monthly: "Monthly",
         cycle_yearly: "Yearly",
         btn_add_sub_confirm: "➕ ADD TRACKING",
+
+        // Currency names & Converter
+        curr_name_vnd: "VIETNAMESE DONG",
+        curr_name_eur: "EURO (EUR CENTS)",
+        curr_name_usd: "US DOLLAR (USD)",
+        rate_label_usd: "1 USD = ? VND",
+        rate_label_eur: "1 EUR = ? VND",
+        opt_curr_vnd_full: "₫ VND (Vietnamese Dong)",
+        opt_curr_eur_full: "€ EUR (Euro - with cents)",
+        opt_curr_usd_full: "$ USD (US Dollar - with cents)",
+        opt_curr_eur_short: "€ EUR (with cents)",
+        opt_curr_usd_short: "$ USD (with cents)",
+        cents_label: "(cents)",
 
         // Budget Settings Modal
         modal_budget_title: "SET FINANCIAL GOALS & CEILING",
@@ -400,9 +478,57 @@ const i18nData = {
 
         // Backup Modal
         modal_backup_title: "BACKUP & EXCEL REPORT EXPORT",
+        backup_excel_title: "📊 MULTI-SHEET EXCEL EXPORT (EUR • USD • VND)",
+        backup_excel_desc: "Multi-currency Excel report with professional cents formatting for EUR and USD:",
+        backup_sheet1: "• Sheet 1: Overview, Exchange Rates & Wallet Balances.",
+        backup_sheet2: "• Sheet 2: Detailed Transaction Ledger with native currency & VND conversion.",
+        backup_sheet3: "• Sheet 3: Recurring Subscriptions & Billing Tracker.",
         btn_download_excel: "📥 DOWNLOAD EXCEL REPORT",
+        backup_json_title: "💾 FULL SYSTEM BACKUP (.JSON)",
+        backup_json_desc: "Safely backup categories, transactions, wallet balances, subscriptions and budget targets.",
         btn_download_json: "📥 DOWNLOAD JSON BACKUP",
+        backup_restore_title: "🔄 RESTORE FROM JSON FILE",
+        backup_restore_desc: "Restore previously exported backup data from your device.",
         btn_import_json: "📤 CHOOSE FILE TO RESTORE",
+
+        // Placeholders
+        ph_tx_amount: "E.g., 50.00",
+        ph_tx_note: "E.g., Lunch, Coffee, Books...",
+        ph_deposit_amount: "E.g., 1000.00",
+        ph_deposit_note: "E.g., Salary, Bonus, Freelance...",
+        ph_transfer_amount: "E.g., 50.00",
+        ph_transfer_note: "E.g., Cash withdrawal, Euro top-up...",
+        ph_wallet_name: "E.g., Main Bank, Revolut EUR, PayPal USD...",
+        ph_wallet_note: "Purpose of this money source...",
+        ph_sub_name: "E.g., Netflix, Spotify, iCloud, Rent...",
+        ph_sub_amount: "E.g., 10.99 or 250.00",
+        ph_sub_note: "Plan details, shared with...",
+        ph_savings_pct: "25",
+
+        // Alerts & Notification Toasts
+        alert_invalid_amount: "Please enter a valid amount (> 0)!",
+        alert_transfer_same_wallet: "Source and destination wallets must be different!",
+        alert_enter_wallet_name: "Please enter wallet name!",
+        alert_enter_sub_details: "Please enter service name and amount!",
+        alert_enter_budget_details: "Please enter valid income and budget amounts (> 0)!",
+        tx_saved: "Transaction saved!",
+        tx_updated: "Transaction updated!",
+        rates_saved: "Custom exchange rates saved!",
+        sub_saved: "Subscription saved!",
+        backup_restored: "Data restored successfully!",
+        tx_initial_count: "0 transactions",
+        page_title: "Pixel Money - Multi-Currency Expense Manager (EUR • USD • VND)",
+        npc_calculating: "Calculating safe budget...",
+        wallet_type_bank: "🏦 Bank Account",
+        wallet_type_cash: "💵 Cash",
+        wallet_type_ewallet: "📱 E-Wallet",
+        wallet_type_credit: "💳 Credit Card",
+        wallet_type_savings: "🐷 Savings / Piggy Bank",
+        wallet_created: "Wallet created successfully!",
+        deposit_success: "Deposited to wallet successfully!",
+        transfer_success: "Transferred between wallets successfully!",
+        rates_synced: "Exchange rates synced online successfully!",
+        sub_paid: "Subscription paid successfully!",
 
         other: "Other",
         footer_text: "PIXEL MONEY • MULTI-CURRENCY PERSONAL FINANCE MANAGER (EUR • USD • VND) • 2026"
@@ -583,11 +709,26 @@ const i18nData = {
         // Subscription Modal
         modal_sub_title: "WIEDERKEHRENDES ABO HINZUFÜGEN",
         label_sub_name: "DIENSTNAME / BEZEICHNUNG:",
+        label_sub_day: "FÄLLIGKEITSTAG IM MONAT (1 - 31):",
         label_sub_billing_day: "MONATLICHER FÄLLIGKEITSTAG (1 - 31):",
+        label_sub_wallet: "ABBUCHUNG VOM KONTO:",
         label_sub_cycle: "ABRECHNUNGSZYKLUS:",
         cycle_monthly: "Monatlich",
         cycle_yearly: "Jährlich",
         btn_add_sub_confirm: "➕ ZU ABOS HINZUFÜGEN",
+
+        // Currency names & Converter
+        curr_name_vnd: "VIETNAMESISCHER DONG",
+        curr_name_eur: "EURO (EUR CENTS)",
+        curr_name_usd: "US-DOLLAR (USD)",
+        rate_label_usd: "1 USD = ? VND",
+        rate_label_eur: "1 EUR = ? VND",
+        opt_curr_vnd_full: "₫ VND (Vietnamesischer Dong)",
+        opt_curr_eur_full: "€ EUR (Euro - mit Cents)",
+        opt_curr_usd_full: "$ USD (US-Dollar - mit Cents)",
+        opt_curr_eur_short: "€ EUR (mit Cents)",
+        opt_curr_usd_short: "$ USD (mit Cents)",
+        cents_label: "(Cents)",
 
         // Budget Settings Modal
         modal_budget_title: "ZIELE & MONATSBUDGET EINSTELLEN",
@@ -603,9 +744,57 @@ const i18nData = {
 
         // Backup Modal
         modal_backup_title: "BACKUP & EXCEL-BERICHT EXPORTIEREN",
+        backup_excel_title: "📊 MEHRSEITIGER EXCEL-EXPORT (EUR • USD • VND)",
+        backup_excel_desc: "Mehrwährungs-Excel-Bericht mit professioneller Cent-Formatierung für EUR und USD:",
+        backup_sheet1: "• Sheet 1: Übersicht, Wechselkurse & Wallet-Salden.",
+        backup_sheet2: "• Sheet 2: Detailliertes Kassenbuch mit Originalwährung & VND-Umrechnung.",
+        backup_sheet3: "• Sheet 3: Wiederkehrende Abonnements & Rechnungsverfolgung.",
         btn_download_excel: "📥 EXCEL-BERICHT HERUNTERLADEN",
+        backup_json_title: "💾 VOLLSTÄNDIGES SYSTEM-BACKUP (.JSON)",
+        backup_json_desc: "Sichere Sicherung von Kategorien, Transaktionen, Wallets, Abos und Budgetzielen.",
         btn_download_json: "📥 JSON-BACKUP HERUNTERLADEN",
+        backup_restore_title: "🔄 AUS JSON-DATEI WIEDERHERSTELLEN",
+        backup_restore_desc: "Zuvor exportierte Sicherungsdaten von Ihrem Gerät wiederherstellen.",
         btn_import_json: "📤 DATEI ZUM WIEDERHERSTELLEN WÄHLEN",
+
+        // Placeholders
+        ph_tx_amount: "Z.B. 50,00",
+        ph_tx_note: "Z.B. Mittagessen, Kaffee, Bücher...",
+        ph_deposit_amount: "Z.B. 1000,00",
+        ph_deposit_note: "Z.B. Gehalt, Bonus, Verkauf...",
+        ph_transfer_amount: "Z.B. 50,00",
+        ph_transfer_note: "Z.B. Bargeldabhebung, Euro-Aufladung...",
+        ph_wallet_name: "Z.B. Bankkonto, Revolut EUR, PayPal USD...",
+        ph_wallet_note: "Verwendungszweck dieser Geldquelle...",
+        ph_sub_name: "Z.B. Netflix, Spotify, iCloud, Miete...",
+        ph_sub_amount: "Z.B. 10,99 oder 250,00",
+        ph_sub_note: "Tarifdetails, geteilt mit...",
+        ph_savings_pct: "25",
+
+        // Alerts & Notification Toasts
+        alert_invalid_amount: "Bitte geben Sie einen gültigen Betrag (> 0) ein!",
+        alert_transfer_same_wallet: "Quell- und Zielkonto müssen unterschiedlich sein!",
+        alert_enter_wallet_name: "Bitte geben Sie einen Wallet-Namen ein!",
+        alert_enter_sub_details: "Bitte geben Sie Dienstnamen und Betrag ein!",
+        alert_enter_budget_details: "Bitte geben Sie gültiges Einkommen und Budget (> 0) ein!",
+        tx_saved: "Transaktion gespeichert!",
+        tx_updated: "Transaktion aktualisiert!",
+        rates_saved: "Wechselkurse gespeichert!",
+        sub_saved: "Abonnement gespeichert!",
+        backup_restored: "Daten erfolgreich wiederhergestellt!",
+        tx_initial_count: "0 Transaktionen",
+        page_title: "Pixel Geld - Multiwährung Ausgaben-Manager (EUR • USD • VND)",
+        npc_calculating: "Sicheres Budget wird berechnet...",
+        wallet_type_bank: "🏦 Bankkonto",
+        wallet_type_cash: "💵 Bargeld",
+        wallet_type_ewallet: "📱 E-Wallet",
+        wallet_type_credit: "💳 Kreditkarte",
+        wallet_type_savings: "🐷 Sparen / Sparschwein",
+        wallet_created: "Geldbörse erfolgreich erstellt!",
+        deposit_success: "Erfolgreich in Geldbörse eingezahlt!",
+        transfer_success: "Erfolgreich zwischen Geldbörsen überwiesen!",
+        rates_synced: "Wechselkurse online erfolgreich synchronisiert!",
+        sub_paid: "Abonnement erfolgreich bezahlt!",
 
         other: "Sonstiges",
         footer_text: "PIXEL GELD • MEHRWÄHRUNGS-FINANZVERWALTUNG (EUR • USD • VND) • 2026"
@@ -691,6 +880,11 @@ function setLanguage(lang) {
     if (!i18nData[lang]) lang = 'vi';
     currentLang = lang;
     localStorage.setItem('pixel_lang', lang);
+
+    // Update document title
+    if (t('page_title')) {
+        document.title = t('page_title');
+    }
 
     // Update active lang pills
     document.querySelectorAll('.lang-pill').forEach(pill => {

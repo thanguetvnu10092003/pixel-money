@@ -1065,7 +1065,7 @@ async function saveTransaction(event) {
 
     if (!amount || amount <= 0) {
         SoundEffects.playWarning();
-        alert('Please enter a valid amount (> 0)!');
+        alert(t('alert_invalid_amount'));
         return;
     }
 
@@ -1096,7 +1096,7 @@ async function saveTransaction(event) {
             triggerCoinBurst(x, y);
 
             closeModal('txModal');
-            showToast(currentEditingTxId ? 'Updated!' : 'Saved!', '💰');
+            showToast(currentEditingTxId ? t('tx_updated') : t('tx_saved'), '💰');
             loadDashboard();
         } else {
             SoundEffects.playWarning();
@@ -1168,7 +1168,7 @@ async function saveDeposit(event) {
 
     if (!amount || amount <= 0) {
         SoundEffects.playWarning();
-        alert('Please enter a valid amount (> 0)!');
+        alert(t('alert_invalid_amount'));
         return;
     }
 
@@ -1187,7 +1187,7 @@ async function saveDeposit(event) {
             triggerCoinBurst(x, y);
 
             closeModal('depositModal');
-            showToast(data.message, '💵');
+            showToast(t('deposit_success') || data.message, '💵');
             loadDashboard();
         } else {
             alert(data.message);
@@ -1216,12 +1216,12 @@ async function saveTransfer(event) {
 
     if (from_wallet_id === to_wallet_id) {
         SoundEffects.playWarning();
-        alert('Source and destination must be different!');
+        alert(t('alert_transfer_same_wallet'));
         return;
     }
     if (!amount || amount <= 0) {
         SoundEffects.playWarning();
-        alert('Please enter a valid amount (> 0)!');
+        alert(t('alert_invalid_amount'));
         return;
     }
 
@@ -1240,7 +1240,7 @@ async function saveTransfer(event) {
             triggerCoinBurst(x, y);
 
             closeModal('transferModal');
-            showToast(data.message, '🔄');
+            showToast(t('transfer_success') || data.message, '🔄');
             loadDashboard();
         } else {
             alert(data.message);
@@ -1273,7 +1273,7 @@ async function saveNewWallet() {
     const note = document.getElementById('walletNote').value.trim();
 
     if (!name) {
-        alert('Please enter wallet name!');
+        alert(t('alert_enter_wallet_name'));
         return;
     }
 
@@ -1287,7 +1287,7 @@ async function saveNewWallet() {
         if (data.success) {
             SoundEffects.playSuccess();
             closeModal('walletModal');
-            showToast(t('modal_wallet_title'), '💼');
+            showToast(t('wallet_created'), '💼');
             loadWallets();
         }
     } catch (e) {
@@ -1329,7 +1329,7 @@ async function syncRatesOnline() {
         const data = await res.json();
         if (data.success) {
             SoundEffects.playSuccess();
-            showToast(data.message, '🌐');
+            showToast(t('rates_synced') || data.message, '🌐');
             if (data.rates) {
                 exchangeRates = { ...exchangeRates, ...data.rates };
                 document.getElementById('rateUsdInput').value = exchangeRates.USD_VND;
@@ -1361,7 +1361,7 @@ async function saveCustomRates() {
             exchangeRates.USD_VND = rate_USD_VND;
             exchangeRates.EUR_VND = rate_EUR_VND;
             updateConverterCalculations();
-            showToast('Rates Saved!', '💾');
+            showToast(t('rates_saved'), '💾');
             loadDashboard();
         }
     } catch (e) {
@@ -1394,7 +1394,7 @@ async function saveSubscription() {
 
     if (!name || !amount || amount <= 0) {
         SoundEffects.playWarning();
-        alert('Please enter service name and amount!');
+        alert(t('alert_enter_sub_details'));
         return;
     }
 
@@ -1408,7 +1408,7 @@ async function saveSubscription() {
         if (data.success) {
             SoundEffects.playSuccess();
             closeModal('subModal');
-            showToast('Saved!', '📺');
+            showToast(t('sub_saved'), '📺');
             loadSubscriptions();
             loadBudgetHealth();
         }
@@ -1424,7 +1424,7 @@ async function paySubscription(subId) {
         if (data.success) {
             SoundEffects.playCoin();
             triggerCoinBurst(window.innerWidth / 2, window.innerHeight / 2);
-            showToast(data.message, '⚡');
+            showToast(t('sub_paid') || data.message, '⚡');
             loadDashboard();
         }
     } catch (e) {
@@ -1538,7 +1538,7 @@ async function saveBudgetSettings() {
 
     if (isNaN(rawIncome) || rawIncome <= 0 || isNaN(rawBudget) || rawBudget <= 0) {
         SoundEffects.playWarning();
-        alert('Please enter valid income and budget amounts (> 0)!');
+        alert(t('alert_enter_budget_details'));
         return;
     }
 
@@ -1583,7 +1583,7 @@ async function handleImportJson(input) {
         const data = await res.json();
         if (data.success) {
             SoundEffects.playSuccess();
-            showToast('Restored!', '💾');
+            showToast(t('backup_restored'), '🔄');
             closeModal('backupModal');
             loadDashboard();
         } else {
