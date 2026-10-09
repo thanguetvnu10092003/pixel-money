@@ -474,24 +474,46 @@ def get_subscriptions():
         FROM subscriptions s
         LEFT JOIN categories c ON s.category_id = c.id
         LEFT JOIN wallets w ON s.wallet_id = w.id
-        ORDER BY s.billing_day ASC
+        ORDER BY s.billing_month ASC, s.billing_day ASC
     ''')
     rows = [dict(r) for r in cursor.fetchall()]
     
     total_monthly_vnd = 0.0
     for item in rows:
         amount_vnd = item['amount_vnd'] or item['amount']
-        cycle = item['cycle']
-        if cycle == 'monthly':
-            total_monthly_vnd += amount_vnd
-        elif cycle == 'yearly':
+        cycle = item.get('cycle', 'monthly')
+        
+        if cycle == 'yearly':
             total_monthly_vnd += amount_vnd / 12.0
+            b_month = item.get('billing_month') or today.month
+            b_day = item.get('billing_day') or 1
             
-        bday = min(item['billing_day'], days_in_month)
-        if bday >= today.day:
-            days_left = bday - today.day
-        else:
-            days_left = (days_in_month - today.day) + bday
+            _, max_days_this_year = calendar.monthrange(today.year, b_month)
+            safe_day_this_year = min(b_day, max_days_this_year)
+            this_year_bill = date(today.year, b_month, safe_day_this_year)
+            
+            if this_year_bill >= today:
+                next_bill_date = this_year_bill
+            else:
+                next_year = today.year + 1
+                _, max_days_next_year = calendar.monthrange(next_year, b_month)
+                safe_day_next_year = min(b_day, max_days_next_year)
+                next_bill_date = date(next_year, b_month, safe_day_next_year)
+                
+            days_left = (next_bill_date - today).days
+        else: # monthly
+            total_monthly_vnd += amount_vnd
+            bday = min(item.get('billing_day', 1), days_in_month)
+            if bday >= today.day:
+                days_left = bday - today.day
+            else:
+                next_month_year = today.year if today.month < 12 else today.year + 1
+                next_month = today.month + 1 if today.month < 12 else 1
+                _, next_month_max = calendar.monthrange(next_month_year, next_month)
+                next_bday = min(item.get('billing_day', 1), next_month_max)
+                next_bill_date = date(next_month_year, next_month, next_bday)
+                days_left = (next_bill_date - today).days
+
         item['days_until_bill'] = days_left
         item['is_due_soon'] = days_left <= 3
         
@@ -517,6 +539,7 @@ def add_subscription():
     currency = data.get('currency', 'VND').upper()
     cycle = data.get('cycle', 'monthly')
     billing_day = int(data.get('billing_day', 1))
+    billing_month = int(data.get('billing_month', datetime.now().month))
     category_id = data.get('category_id')
     wallet_id = data.get('wallet_id')
     note = data.get('note', '').strip()
@@ -525,17 +548,20 @@ def add_subscription():
         return jsonify({'success': False, 'message': 'Vui lòng nhập tên dịch vụ và số tiền hợp lệ!'}), 400
     if currency not in ['VND', 'EUR', 'USD']:
         currency = 'VND'
+    if cycle not in ['monthly', 'yearly']:
+        cycle = 'monthly'
         
     rates = get_exchange_rates()
     amount_vnd = convert_currency(amount, currency, 'VND', rates)
     
     billing_day = max(1, min(31, billing_day))
+    billing_month = max(1, min(12, billing_month))
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO subscriptions (name, amount, currency, amount_vnd, cycle, billing_day, category_id, wallet_id, note)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (name, amount, currency, amount_vnd, cycle, billing_day, category_id, wallet_id, note))
+        INSERT INTO subscriptions (name, amount, currency, amount_vnd, cycle, billing_day, billing_month, category_id, wallet_id, note)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (name, amount, currency, amount_vnd, cycle, billing_day, billing_month, category_id, wallet_id, note))
     conn.commit()
     conn.close()
     return jsonify({'success': True, 'message': f'Đã thêm dịch vụ định kỳ ({currency})!'})
@@ -960,11 +986,11 @@ def export_excel():
     
     # 3. Subscriptions
     cursor.execute('''
-        SELECT s.name, s.amount, s.currency, s.amount_vnd, s.cycle, s.billing_day, c.name as category, w.name as wallet_name, s.note
+        SELECT s.name, s.amount, s.currency, s.amount_vnd, s.cycle, s.billing_day, s.billing_month, c.name as category, w.name as wallet_name, s.note
         FROM subscriptions s
         LEFT JOIN categories c ON s.category_id = c.id
         LEFT JOIN wallets w ON s.wallet_id = w.id
-        ORDER BY s.billing_day ASC
+        ORDER BY s.billing_month ASC, s.billing_day ASC
     ''')
     subscriptions = cursor.fetchall()
     
@@ -1281,7 +1307,10 @@ def export_excel():
         c_vnd.font = Font(name='Segoe UI', size=10, bold=True, color='D97706')
         
         ws3.cell(row=s_row, column=5, value=cycle_str).alignment = center_align
-        ws3.cell(row=s_row, column=6, value=f"Ngày {s['billing_day']} hàng tháng").alignment = center_align
+        b_day = s['billing_day']
+        b_month = s.get('billing_month', 1)
+        schedule_str = f"Ngày {b_day}/{b_month} hàng năm" if s['cycle'] == 'yearly' else f"Ngày {b_day} hàng tháng"
+        ws3.cell(row=s_row, column=6, value=schedule_str).alignment = center_align
         ws3.cell(row=s_row, column=7, value=s['wallet_name'] or 'Mặc định').alignment = center_align
         ws3.cell(row=s_row, column=8, value=s['note'] or '')
         
@@ -1376,9 +1405,9 @@ def import_json():
         if 'subscriptions' in data and data['subscriptions']:
             for s in data['subscriptions']:
                 cursor.execute('''
-                    INSERT OR REPLACE INTO subscriptions (id, name, amount, currency, amount_vnd, cycle, billing_day, category_id, wallet_id, is_active, note)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (s.get('id'), s['name'], s['amount'], s.get('currency', 'VND'), s.get('amount_vnd', 0), s.get('cycle', 'monthly'), s.get('billing_day', 1), s.get('category_id'), s.get('wallet_id'), s.get('is_active', 1), s.get('note')))
+                    INSERT OR REPLACE INTO subscriptions (id, name, amount, currency, amount_vnd, cycle, billing_day, billing_month, category_id, wallet_id, is_active, note)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (s.get('id'), s['name'], s['amount'], s.get('currency', 'VND'), s.get('amount_vnd', 0), s.get('cycle', 'monthly'), s.get('billing_day', 1), s.get('billing_month', 1), s.get('category_id'), s.get('wallet_id'), s.get('is_active', 1), s.get('note')))
                 
         conn.commit()
         conn.close()

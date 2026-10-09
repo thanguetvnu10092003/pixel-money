@@ -25,6 +25,18 @@
                 </div>
             </div>
 
+            <!-- TODAY DATE BADGE (HÔM NAY) -->
+            <div class="pixel-today-box" id="pixelTodayBox" title="Hôm nay">
+                <div class="pixel-today-badge-top">
+                    <span class="pixel-today-live-dot"></span>
+                    <span data-i18n="label_today_is">HÔM NAY:</span>
+                </div>
+                <div class="pixel-today-body">
+                    <span class="pixel-today-dow" id="headerTodayDow">THỨ SÁU</span>
+                    <span class="pixel-today-date" id="headerTodayDate">09/10/2026</span>
+                </div>
+            </div>
+
             <!-- Currency & Language Switchers -->
             <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 0.4rem;">
@@ -662,19 +674,34 @@
             </div>
             <div class="form-group">
                 <label data-i18n="label_sub_cycle">CHU KỲ GIA HẠN:</label>
-                <select id="subCycle" class="form-control">
+                <select id="subCycle" class="form-control" onchange="handleSubCycleChange()">
                     <option value="monthly" data-i18n="cycle_monthly">Hàng tháng</option>
                     <option value="yearly" data-i18n="cycle_yearly">Hàng năm</option>
                 </select>
             </div>
             <div class="form-group">
+                <!-- Modal Today Status Banner -->
+                <div class="pixel-modal-today-banner">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.15rem;">🗓️</span>
+                        <div>
+                            <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;" data-i18n="cal_today_banner_label">Hôm nay là:</div>
+                            <div style="font-family: var(--font-pixel); font-weight: bold; color: var(--color-accent); font-size: 0.85rem;" id="subModalTodayText">Thứ Sáu, 09/10/2026</div>
+                        </div>
+                    </div>
+                    <button type="button" class="pixel-btn pixel-btn-sm" style="font-size: 0.7rem; padding: 2px 8px;" onclick="pickTodayAsBillingDate()">
+                        ⚡ <span data-i18n="btn_pick_today">Chọn Hôm Nay</span>
+                    </button>
+                </div>
+
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.5rem;">
-                    <label data-i18n="label_sub_day" style="margin-bottom: 0;">NGÀY ĐẾN HẠN HÀNG THÁNG (1 - 31):</label>
+                    <label id="labelSubDaySchedule" data-i18n="label_sub_day" style="margin-bottom: 0;">NGÀY ĐẾN HẠN HÀNG THÁNG (1 - 31):</label>
                     <span class="pixel-tag" id="subSelectedDayTag" style="background: rgba(0, 240, 255, 0.15); border: 1px solid var(--color-primary); color: var(--color-primary); font-size: 0.75rem; padding: 2px 8px; font-weight: bold;">
                         📅 <span id="subSelectedDayText">Ngày 1 hàng tháng</span>
                     </span>
                 </div>
                 <input type="hidden" id="subDay" value="1">
+                <input type="hidden" id="subMonth" value="10">
                 
                 <!-- Retro Pixel Calendar Table Container -->
                 <div class="pixel-calendar-card">
@@ -685,8 +712,8 @@
                         <button type="button" class="pixel-cal-nav-btn" onclick="navSubCalendarMonth(1)">▶</button>
                     </div>
 
-                    <!-- Quick Presets -->
-                    <div class="pixel-cal-presets">
+                    <!-- Quick Presets for Monthly -->
+                    <div class="pixel-cal-presets" id="subCalPresetsMonthly">
                         <button type="button" class="pixel-preset-btn" data-preset-day="1" onclick="selectSubBillingDay(1)">
                             ⚡ <span data-i18n="cal_preset_start">Đầu tháng (1)</span>
                         </button>
@@ -704,6 +731,22 @@
                         </button>
                         <button type="button" class="pixel-preset-btn" data-preset-day="31" onclick="selectSubBillingDay(31)">
                             🏁 <span data-i18n="cal_preset_end">Cuối tháng (31)</span>
+                        </button>
+                    </div>
+
+                    <!-- Quick Presets for Yearly -->
+                    <div class="pixel-cal-presets" id="subCalPresetsYearly" style="display: none;">
+                        <button type="button" class="pixel-preset-btn" onclick="pickTodayAsBillingDate()">
+                            ⚡ <span data-i18n="cal_preset_today">Hôm nay</span>
+                        </button>
+                        <button type="button" class="pixel-preset-btn" onclick="selectYearlyPreset(1, 1)">
+                            <span data-i18n="cal_preset_start_year">Đầu năm (01/01)</span>
+                        </button>
+                        <button type="button" class="pixel-preset-btn" onclick="selectYearlyPreset(1, 7)">
+                            <span data-i18n="cal_preset_mid_year">Giữa năm (01/07)</span>
+                        </button>
+                        <button type="button" class="pixel-preset-btn" onclick="selectYearlyPreset(31, 12)">
+                            🏁 <span data-i18n="cal_preset_end_year">Cuối năm (31/12)</span>
                         </button>
                     </div>
 

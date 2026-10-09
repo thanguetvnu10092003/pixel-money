@@ -130,6 +130,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initSoundToggle();
     initCurrencySwitcher();
     initLanguageSwitcher();
+    updateTodayDisplay();
+    setInterval(updateTodayDisplay, 60000);
     loadRates();
     loadCategories();
     loadWallets();
@@ -942,7 +944,16 @@ async function loadSubscriptions() {
             card.className = 'sub-card' + (sub.is_due_soon ? ' due-soon' : '');
             
             const badgeClass = sub.is_due_soon ? 'urgent' : 'normal';
-            const daysText = sub.days_until_bill === 0 ? t('sub_due_today') : t('sub_days_left', { d: sub.days_until_bill, day: sub.billing_day });
+            const bDay = sub.billing_day;
+            const bMonth = sub.billing_month || 1;
+            let daysText = '';
+            if (sub.days_until_bill === 0) {
+                daysText = t('sub_due_today');
+            } else if (sub.cycle === 'yearly') {
+                daysText = t('sub_days_left_yearly', { d: sub.days_until_bill, day: bDay, month: bMonth });
+            } else {
+                daysText = t('sub_days_left', { d: sub.days_until_bill, day: bDay });
+            }
             const sCurr = sub.currency || 'VND';
 
             card.innerHTML = `
@@ -1369,6 +1380,43 @@ async function saveCustomRates() {
     }
 }
 
+// === TODAY DATE DISPLAY FUNCTION ===
+function updateTodayDisplay() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    const day = today.getDate();
+    const dayOfWeek = today.getDay(); // 0 is Sunday
+
+    const dowVi = ['CHỦ NHẬT', 'THỨ HAI', 'THỨ BA', 'THỨ TƯ', 'THỨ NĂM', 'THỨ SÁU', 'THỨ BẢY'];
+    const dowEn = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const dowDe = ['SONNTAG', 'MONTAG', 'DIENSTAG', 'MITTWOCH', 'DONNERSTAG', 'FREITAG', 'SAMSTAG'];
+
+    let dowText = dowVi[dayOfWeek];
+    let dateStr = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+    let fullModalText = `${dowVi[dayOfWeek]}, ngày ${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+
+    if (typeof currentLang !== 'undefined' && currentLang === 'en') {
+        dowText = dowEn[dayOfWeek];
+        const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        dateStr = `${String(day).padStart(2, '0')} ${monthNamesEn[month - 1]} ${year}`;
+        fullModalText = `${dowEn[dayOfWeek]}, ${monthNamesEn[month - 1]} ${day}, ${year}`;
+    } else if (typeof currentLang !== 'undefined' && currentLang === 'de') {
+        dowText = dowDe[dayOfWeek];
+        const monthNamesDe = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+        dateStr = `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+        fullModalText = `${dowDe[dayOfWeek]}, ${day}. ${monthNamesDe[month - 1]} ${year}`;
+    }
+
+    const dowEl = document.getElementById('headerTodayDow');
+    const dateEl = document.getElementById('headerTodayDate');
+    const modalTextEl = document.getElementById('subModalTodayText');
+
+    if (dowEl) dowEl.textContent = dowText;
+    if (dateEl) dateEl.textContent = dateStr;
+    if (modalTextEl) modalTextEl.textContent = fullModalText;
+}
+
 // === PIXEL CALENDAR TABLE PICKER FOR SUBSCRIPTION BILLING DAY ===
 let currentSubCalDate = new Date();
 
@@ -1453,7 +1501,7 @@ function renderSubCalendarTable(targetDate = null, selectedDay = null) {
         if (isToday) {
             btn.title = t('cal_today_title', { day });
         }
-        btn.onclick = () => selectSubBillingDay(day);
+        btn.onclick = () => selectSubBillingDay(day, month + 1);
 
         td.appendChild(btn);
         row.appendChild(td);
@@ -1471,14 +1519,22 @@ function renderSubCalendarTable(targetDate = null, selectedDay = null) {
         tbody.appendChild(row);
     }
 
-    updateSelectedSubDayBadge(selectedDay);
+    updateSelectedSubDayBadge(selectedDay, month + 1);
 }
 
-function selectSubBillingDay(day) {
+function selectSubBillingDay(day, month = null) {
     day = Math.max(1, Math.min(31, parseInt(day) || 1));
+    if (month === null) {
+        month = currentSubCalDate.getMonth() + 1;
+    } else {
+        month = Math.max(1, Math.min(12, parseInt(month) || 1));
+    }
+
     SoundEffects.playClick();
-    const input = document.getElementById('subDay');
-    if (input) input.value = day;
+    const inputDay = document.getElementById('subDay');
+    const inputMonth = document.getElementById('subMonth');
+    if (inputDay) inputDay.value = day;
+    if (inputMonth) inputMonth.value = month;
 
     // Update active class on table cells
     document.querySelectorAll('#subCalTableBody .cal-day-cell').forEach(btn => {
@@ -1490,7 +1546,7 @@ function selectSubBillingDay(day) {
     });
 
     // Update preset buttons active state
-    document.querySelectorAll('.pixel-preset-btn').forEach(pBtn => {
+    document.querySelectorAll('#subCalPresetsMonthly .pixel-preset-btn').forEach(pBtn => {
         const presetDay = parseInt(pBtn.getAttribute('data-preset-day'));
         if (presetDay === day) {
             pBtn.classList.add('active');
@@ -1499,12 +1555,20 @@ function selectSubBillingDay(day) {
         }
     });
 
-    updateSelectedSubDayBadge(day);
+    updateSelectedSubDayBadge(day, month);
 }
 
-function updateSelectedSubDayBadge(day) {
+function updateSelectedSubDayBadge(day, month = null) {
+    const cycle = document.getElementById('subCycle')?.value || 'monthly';
+    if (month === null) {
+        month = currentSubCalDate ? (currentSubCalDate.getMonth() + 1) : 1;
+    }
     const textEl = document.getElementById('subSelectedDayText');
-    if (textEl) {
+    if (!textEl) return;
+
+    if (cycle === 'yearly') {
+        textEl.textContent = t('cal_selected_day_yearly_label', { day, month });
+    } else {
         textEl.textContent = t('cal_selected_day_label', { day });
     }
 }
@@ -1512,7 +1576,64 @@ function updateSelectedSubDayBadge(day) {
 function navSubCalendarMonth(offset) {
     SoundEffects.playClick();
     currentSubCalDate.setMonth(currentSubCalDate.getMonth() + offset);
-    renderSubCalendarTable(currentSubCalDate);
+    const month = currentSubCalDate.getMonth() + 1;
+    const dayInput = document.getElementById('subDay');
+    const monthInput = document.getElementById('subMonth');
+    if (monthInput) monthInput.value = month;
+    const currentDay = parseInt(dayInput?.value || 1);
+    renderSubCalendarTable(currentSubCalDate, currentDay);
+    updateSelectedSubDayBadge(currentDay, month);
+}
+
+function handleSubCycleChange() {
+    SoundEffects.playClick();
+    const cycle = document.getElementById('subCycle')?.value || 'monthly';
+    const label = document.getElementById('labelSubDaySchedule');
+    const presetsMonthly = document.getElementById('subCalPresetsMonthly');
+    const presetsYearly = document.getElementById('subCalPresetsYearly');
+
+    if (cycle === 'yearly') {
+        if (label) label.textContent = t('label_sub_day_yearly');
+        if (presetsMonthly) presetsMonthly.style.display = 'none';
+        if (presetsYearly) presetsYearly.style.display = 'flex';
+    } else {
+        if (label) label.textContent = t('label_sub_day');
+        if (presetsMonthly) presetsMonthly.style.display = 'flex';
+        if (presetsYearly) presetsYearly.style.display = 'none';
+    }
+
+    const day = parseInt(document.getElementById('subDay')?.value || 1);
+    const month = parseInt(document.getElementById('subMonth')?.value || (currentSubCalDate.getMonth() + 1));
+    updateSelectedSubDayBadge(day, month);
+}
+
+function pickTodayAsBillingDate() {
+    SoundEffects.playCoin();
+    const today = new Date();
+    currentSubCalDate = new Date(today);
+    const day = today.getDate();
+    const month = today.getMonth() + 1;
+
+    const dayInput = document.getElementById('subDay');
+    const monthInput = document.getElementById('subMonth');
+    if (dayInput) dayInput.value = day;
+    if (monthInput) monthInput.value = month;
+
+    renderSubCalendarTable(today, day);
+    selectSubBillingDay(day, month);
+}
+
+function selectYearlyPreset(day, month) {
+    SoundEffects.playClick();
+    const targetDate = new Date(currentSubCalDate.getFullYear(), month - 1, day);
+    currentSubCalDate = targetDate;
+    const dayInput = document.getElementById('subDay');
+    const monthInput = document.getElementById('subMonth');
+    if (dayInput) dayInput.value = day;
+    if (monthInput) monthInput.value = month;
+
+    renderSubCalendarTable(targetDate, day);
+    selectSubBillingDay(day, month);
 }
 
 // 16. ACTIONS: SUBSCRIPTIONS
@@ -1522,12 +1643,20 @@ function openAddSubModal() {
     document.getElementById('subAmount').value = '';
     document.getElementById('subCurrency').value = currentCurrency;
     document.getElementById('subCycle').value = 'monthly';
-    const defaultDay = new Date().getDate();
+    const today = new Date();
+    currentSubCalDate = new Date(today);
+    const defaultDay = today.getDate();
+    const defaultMonth = today.getMonth() + 1;
     document.getElementById('subDay').value = defaultDay;
+    if (document.getElementById('subMonth')) {
+        document.getElementById('subMonth').value = defaultMonth;
+    }
     document.getElementById('subNote').value = '';
     populateWalletSelects();
-    renderSubCalendarTable(new Date(), defaultDay);
-    selectSubBillingDay(defaultDay);
+    handleSubCycleChange();
+    renderSubCalendarTable(today, defaultDay);
+    selectSubBillingDay(defaultDay, defaultMonth);
+    updateTodayDisplay();
     document.getElementById('subModal').classList.add('active');
 }
 
@@ -1537,6 +1666,7 @@ async function saveSubscription() {
     const currency = document.getElementById('subCurrency').value;
     const cycle = document.getElementById('subCycle').value;
     const billing_day = parseInt(document.getElementById('subDay').value);
+    const billing_month = parseInt(document.getElementById('subMonth')?.value || (currentSubCalDate.getMonth() + 1));
     const category_id = parseInt(document.getElementById('subCategory').value);
     const wallet_id = parseInt(document.getElementById('subWallet').value);
     const note = document.getElementById('subNote').value.trim();
@@ -1551,7 +1681,7 @@ async function saveSubscription() {
         const res = await fetch('/api/subscriptions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, amount, currency, cycle, billing_day, category_id, wallet_id, note })
+            body: JSON.stringify({ name, amount, currency, cycle, billing_day, billing_month, category_id, wallet_id, note })
         });
         const data = await res.json();
         if (data.success) {

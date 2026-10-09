@@ -281,6 +281,16 @@ const i18nData = {
         cal_preset_end: "Cuối tháng (31)",
         cal_click_hint: "Nhấp vào một ngày trong bảng lịch để chọn ngày thanh toán định kỳ.",
         cal_today_title: "Hôm nay: Ngày {day}",
+        label_today_is: "HÔM NAY:",
+        label_sub_day_yearly: "NGÀY & THÁNG ĐẾN HẠN HÀNG NĂM:",
+        cal_today_banner_label: "Hôm nay là:",
+        btn_pick_today: "Chọn Hôm Nay",
+        cal_selected_day_yearly_label: "Ngày {day} tháng {month} hàng năm ({day}/{month})",
+        sub_days_left_yearly: "Còn {d} ngày ({day}/{month} hàng năm)",
+        cal_preset_today: "Hôm nay",
+        cal_preset_start_year: "Đầu năm (01/01)",
+        cal_preset_mid_year: "Giữa năm (01/07)",
+        cal_preset_end_year: "Cuối năm (31/12)",
 
         other: "Khác",
         footer_text: "VÍ TIỀN PIXEL • PHÁT TRIỂN DÀNH CHO QUẢN LÝ TÀI CHÍNH CÁ NHÂN ĐA TIỀN TỆ (EUR • USD • VNĐ) • 2026"
@@ -565,6 +575,16 @@ const i18nData = {
         cal_preset_end: "End of month (31)",
         cal_click_hint: "Click any date in the calendar table to select the recurring billing day.",
         cal_today_title: "Today: Day {day}",
+        label_today_is: "TODAY:",
+        label_sub_day_yearly: "ANNUAL BILLING DATE (DAY & MONTH):",
+        cal_today_banner_label: "Today is:",
+        btn_pick_today: "Pick Today",
+        cal_selected_day_yearly_label: "Day {day}, Month {month} yearly ({day}/{month})",
+        sub_days_left_yearly: "In {d} days ({day}/{month} yearly)",
+        cal_preset_today: "Today",
+        cal_preset_start_year: "Start of year (01/01)",
+        cal_preset_mid_year: "Mid year (01/07)",
+        cal_preset_end_year: "End of year (31/12)",
 
         other: "Other",
         footer_text: "PIXEL MONEY • MULTI-CURRENCY PERSONAL FINANCE MANAGER (EUR • USD • VND) • 2026"
@@ -849,6 +869,16 @@ const i18nData = {
         cal_preset_end: "Monatsende (31)",
         cal_click_hint: "Klicken Sie auf ein Datum in der Kalendertabelle, um den Abrechnungstag auszuwählen.",
         cal_today_title: "Heute: Tag {day}",
+        label_today_is: "HEUTE:",
+        label_sub_day_yearly: "JÄHRLICHER ABRECHNUNGSTAG (TAG & MONAT):",
+        cal_today_banner_label: "Heute ist:",
+        btn_pick_today: "Heute wählen",
+        cal_selected_day_yearly_label: "Tag {day}, Monat {month} jährlich ({day}.{month}.)",
+        sub_days_left_yearly: "In {d} Tagen ({day}.{month}. jährlich)",
+        cal_preset_today: "Heute",
+        cal_preset_start_year: "Jahresanfang (01.01)",
+        cal_preset_mid_year: "Jahresmitte (01.07)",
+        cal_preset_end_year: "Jahresende (31.12)",
 
         other: "Sonstiges",
         footer_text: "PIXEL GELD • MEHRWÄHRUNGS-FINANZVERWALTUNG (EUR • USD • VND) • 2026"
@@ -979,6 +1009,12 @@ function setLanguage(lang) {
     }
     if (typeof renderSubCalendarTable === 'function') {
         renderSubCalendarTable();
+    }
+    if (typeof handleSubCycleChange === 'function') {
+        handleSubCycleChange();
+    }
+    if (typeof updateTodayDisplay === 'function') {
+        updateTodayDisplay();
     }
 
     // Trigger dashboard refresh for dynamic strings & charts

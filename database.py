@@ -154,6 +154,7 @@ def init_db():
             amount_vnd REAL NOT NULL DEFAULT 0.0,
             cycle TEXT NOT NULL DEFAULT 'monthly', -- 'monthly', 'yearly'
             billing_day INTEGER NOT NULL DEFAULT 1, -- 1 to 31
+            billing_month INTEGER NOT NULL DEFAULT 1, -- 1 to 12 (used when cycle is 'yearly')
             category_id INTEGER,
             wallet_id INTEGER,
             is_active INTEGER NOT NULL DEFAULT 1,
@@ -172,6 +173,8 @@ def init_db():
         cursor.execute("ALTER TABLE subscriptions ADD COLUMN amount_vnd REAL NOT NULL DEFAULT 0.0")
     if 'wallet_id' not in sub_cols:
         cursor.execute("ALTER TABLE subscriptions ADD COLUMN wallet_id INTEGER REFERENCES wallets(id) ON DELETE SET NULL")
+    if 'billing_month' not in sub_cols:
+        cursor.execute("ALTER TABLE subscriptions ADD COLUMN billing_month INTEGER NOT NULL DEFAULT 1")
     
     # 6. Budgets table
     cursor.execute('''

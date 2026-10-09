@@ -1370,3 +1370,80 @@ footer {
     color: var(--text-muted);
     text-align: center;
 }
+
+/* Header Today Date Box Widget */
+.pixel-today-box {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-card);
+    border: 3px solid var(--border-color);
+    box-shadow: var(--pixel-shadow-sm);
+    padding: 0.35rem 0.85rem;
+    position: relative;
+    user-select: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pixel-today-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 3px 3px 0px #0b0818;
+}
+
+.pixel-today-badge-top {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-pixel);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.pixel-today-live-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--color-success);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--color-success);
+    animation: livePulse 2s infinite ease-in-out;
+}
+
+@keyframes livePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.85); }
+}
+
+.pixel-today-body {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-top: 0.1rem;
+}
+
+.pixel-today-dow {
+    font-family: var(--font-pixel);
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--color-accent);
+}
+
+.pixel-today-date {
+    font-family: var(--font-pixel);
+    font-size: 0.86rem;
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+/* Modal Today Status Banner */
+.pixel-modal-today-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 240, 255, 0.08);
+    border: 2px dashed var(--color-primary);
+    padding: 0.55rem 0.85rem;
+    margin-bottom: 0.75rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
