@@ -13,6 +13,7 @@ from database import get_db, init_db, calculate_wallet_balances, get_exchange_ra
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.config['JSON_AS_ASCII'] = False
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 @app.before_request
 def setup_db_once():

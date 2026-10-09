@@ -1369,6 +1369,152 @@ async function saveCustomRates() {
     }
 }
 
+// === PIXEL CALENDAR TABLE PICKER FOR SUBSCRIPTION BILLING DAY ===
+let currentSubCalDate = new Date();
+
+function formatCalMonthYear(year, monthIndex) {
+    const monthNum = monthIndex + 1;
+    if (typeof currentLang !== 'undefined' && currentLang === 'vi') {
+        return `THÁNG ${monthNum} / ${year}`;
+    } else if (typeof currentLang !== 'undefined' && currentLang === 'de') {
+        const monthNamesDe = ['JANUAR', 'FEBRUAR', 'MÄRZ', 'APRIL', 'MAI', 'JUNI', 'JULI', 'AUGUST', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DEZEMBER'];
+        return `${monthNamesDe[monthIndex]} ${year}`;
+    } else {
+        const monthNamesEn = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+        return `${monthNamesEn[monthIndex]} ${year}`;
+    }
+}
+
+function renderSubCalendarTable(targetDate = null, selectedDay = null) {
+    if (targetDate) {
+        currentSubCalDate = new Date(targetDate);
+    }
+    const year = currentSubCalDate.getFullYear();
+    const month = currentSubCalDate.getMonth(); // 0-indexed
+
+    if (selectedDay === null) {
+        selectedDay = parseInt(document.getElementById('subDay')?.value || 1);
+    }
+
+    // Update month/year title
+    const titleEl = document.getElementById('subCalMonthTitle');
+    if (titleEl) {
+        titleEl.textContent = formatCalMonthYear(year, month);
+    }
+
+    // Days in current month
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    // Day of week of 1st day (0 = Sun, 1 = Mon, ..., 6 = Sat)
+    const firstDayOfWeek = new Date(year, month, 1).getDay();
+    // Convert so Monday = 0, Tuesday = 1, ..., Sunday = 6
+    const startCol = (firstDayOfWeek + 6) % 7;
+
+    // Today's date check
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+    const todayDay = isCurrentMonth ? today.getDate() : -1;
+
+    const tbody = document.getElementById('subCalTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    let dayCounter = 1;
+    let row = document.createElement('tr');
+
+    // Previous month filler cells
+    const prevMonthDays = new Date(year, month, 0).getDate();
+    for (let i = 0; i < startCol; i++) {
+        const td = document.createElement('td');
+        const prevDayNum = prevMonthDays - startCol + 1 + i;
+        td.innerHTML = `<button type="button" class="cal-day-cell is-other-month" tabindex="-1">${prevDayNum}</button>`;
+        row.appendChild(td);
+    }
+
+    while (dayCounter <= daysInMonth) {
+        if (row.children.length === 7) {
+            tbody.appendChild(row);
+            row = document.createElement('tr');
+        }
+
+        const td = document.createElement('td');
+        const day = dayCounter;
+        const isSelected = (day === selectedDay);
+        const isToday = (day === todayDay);
+
+        let cellClasses = ['cal-day-cell'];
+        if (isSelected) cellClasses.push('is-selected');
+        if (isToday) cellClasses.push('is-today');
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = cellClasses.join(' ');
+        btn.textContent = day;
+        btn.setAttribute('data-day', day);
+        if (isToday) {
+            btn.title = t('cal_today_title', { day });
+        }
+        btn.onclick = () => selectSubBillingDay(day);
+
+        td.appendChild(btn);
+        row.appendChild(td);
+        dayCounter++;
+    }
+
+    // Next month filler cells to complete the 7-column row
+    let nextDayCounter = 1;
+    while (row.children.length < 7 && row.children.length > 0) {
+        const td = document.createElement('td');
+        td.innerHTML = `<button type="button" class="cal-day-cell is-other-month" tabindex="-1">${nextDayCounter++}</button>`;
+        row.appendChild(td);
+    }
+    if (row.children.length > 0) {
+        tbody.appendChild(row);
+    }
+
+    updateSelectedSubDayBadge(selectedDay);
+}
+
+function selectSubBillingDay(day) {
+    day = Math.max(1, Math.min(31, parseInt(day) || 1));
+    SoundEffects.playClick();
+    const input = document.getElementById('subDay');
+    if (input) input.value = day;
+
+    // Update active class on table cells
+    document.querySelectorAll('#subCalTableBody .cal-day-cell').forEach(btn => {
+        if (parseInt(btn.getAttribute('data-day')) === day) {
+            btn.classList.add('is-selected');
+        } else {
+            btn.classList.remove('is-selected');
+        }
+    });
+
+    // Update preset buttons active state
+    document.querySelectorAll('.pixel-preset-btn').forEach(pBtn => {
+        const presetDay = parseInt(pBtn.getAttribute('data-preset-day'));
+        if (presetDay === day) {
+            pBtn.classList.add('active');
+        } else {
+            pBtn.classList.remove('active');
+        }
+    });
+
+    updateSelectedSubDayBadge(day);
+}
+
+function updateSelectedSubDayBadge(day) {
+    const textEl = document.getElementById('subSelectedDayText');
+    if (textEl) {
+        textEl.textContent = t('cal_selected_day_label', { day });
+    }
+}
+
+function navSubCalendarMonth(offset) {
+    SoundEffects.playClick();
+    currentSubCalDate.setMonth(currentSubCalDate.getMonth() + offset);
+    renderSubCalendarTable(currentSubCalDate);
+}
+
 // 16. ACTIONS: SUBSCRIPTIONS
 function openAddSubModal() {
     SoundEffects.playClick();
@@ -1376,9 +1522,12 @@ function openAddSubModal() {
     document.getElementById('subAmount').value = '';
     document.getElementById('subCurrency').value = currentCurrency;
     document.getElementById('subCycle').value = 'monthly';
-    document.getElementById('subDay').value = '1';
+    const defaultDay = new Date().getDate();
+    document.getElementById('subDay').value = defaultDay;
     document.getElementById('subNote').value = '';
     populateWalletSelects();
+    renderSubCalendarTable(new Date(), defaultDay);
+    selectSubBillingDay(defaultDay);
     document.getElementById('subModal').classList.add('active');
 }
 

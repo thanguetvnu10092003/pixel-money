@@ -1191,3 +1191,182 @@ footer {
     font-weight: bold;
     box-shadow: 1px 1px 0 #000;
 }
+
+/* --- RETRO PIXEL CALENDAR TABLE PICKER --- */
+.pixel-calendar-card {
+    background: var(--bg-input);
+    border: 3px solid var(--border-color);
+    box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.4), var(--pixel-shadow-sm);
+    padding: 0.85rem;
+    margin-top: 0.35rem;
+}
+
+.pixel-cal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 0.6rem;
+}
+
+.pixel-cal-title {
+    font-family: var(--font-pixel);
+    font-size: 0.88rem;
+    color: var(--color-primary);
+    letter-spacing: 0.5px;
+    font-weight: 700;
+}
+
+.pixel-cal-nav-btn {
+    background: var(--bg-input);
+    color: var(--color-accent);
+    border: 2px solid var(--border-color);
+    font-family: var(--font-pixel);
+    font-size: 0.75rem;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--pixel-shadow-sm);
+    transition: transform 0.1s ease, background 0.1s ease;
+}
+
+.pixel-cal-nav-btn:hover {
+    background: var(--color-primary);
+    color: #0b0818;
+    transform: scale(1.1);
+}
+
+.pixel-cal-presets {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+
+.pixel-preset-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-light);
+    color: var(--text-muted);
+    font-family: var(--font-pixel);
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    cursor: pointer;
+    box-shadow: 1px 1px 0px #0b0818;
+    transition: all 0.15s ease;
+}
+
+.pixel-preset-btn:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background: rgba(255, 230, 0, 0.12);
+    transform: translateY(-1px);
+}
+
+.pixel-preset-btn.active {
+    background: rgba(0, 240, 255, 0.15);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    font-weight: bold;
+}
+
+.pixel-cal-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.pixel-cal-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 3px;
+    margin: 0;
+}
+
+.pixel-cal-table th {
+    font-family: var(--font-pixel);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 4px 2px;
+    border-bottom: 2px dashed var(--border-light);
+}
+
+.pixel-cal-table th.cal-weekend {
+    color: var(--color-secondary);
+}
+
+.pixel-cal-table td {
+    padding: 0;
+    text-align: center;
+}
+
+.cal-day-cell {
+    width: 100%;
+    height: 32px;
+    min-width: 30px;
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    color: var(--text-main);
+    font-family: var(--font-pixel);
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 1px 1px 0px #0b0818;
+    transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+    position: relative;
+}
+
+.cal-day-cell:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    border-color: var(--color-primary);
+    transform: scale(1.1);
+    z-index: 3;
+    color: var(--color-primary);
+}
+
+.cal-day-cell.is-today {
+    border-color: var(--color-accent);
+    box-shadow: inset 0 0 4px rgba(255, 230, 0, 0.4);
+}
+
+.cal-day-cell.is-today::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    width: 4px;
+    height: 4px;
+    background: var(--color-accent);
+    border-radius: 50%;
+}
+
+.cal-day-cell.is-selected {
+    background: var(--color-primary) !important;
+    color: #0b0818 !important;
+    border-color: #ffffff !important;
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.75), inset 0 0 3px #fff !important;
+    transform: scale(1.08);
+    z-index: 2;
+}
+
+.cal-day-cell.is-other-month {
+    opacity: 0.22;
+    cursor: default;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.pixel-cal-hint {
+    margin-top: 0.5rem;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-align: center;
+}

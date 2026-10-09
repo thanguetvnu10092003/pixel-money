@@ -264,6 +264,24 @@ const i18nData = {
         rates_synced: "Đã đồng bộ tỷ giá online thành công!",
         sub_paid: "Đã thanh toán dịch vụ định kỳ!",
 
+        // Pixel Calendar Table Picker
+        cal_th_mon: "T2",
+        cal_th_tue: "T3",
+        cal_th_wed: "T4",
+        cal_th_thu: "T5",
+        cal_th_fri: "T6",
+        cal_th_sat: "T7",
+        cal_th_sun: "CN",
+        cal_selected_day_label: "Ngày {day} hàng tháng",
+        cal_preset_start: "Đầu tháng (1)",
+        cal_preset_10: "Ngày 10",
+        cal_preset_mid: "Giữa tháng (15)",
+        cal_preset_20: "Ngày 20",
+        cal_preset_25: "Ngày 25",
+        cal_preset_end: "Cuối tháng (31)",
+        cal_click_hint: "Nhấp vào một ngày trong bảng lịch để chọn ngày thanh toán định kỳ.",
+        cal_today_title: "Hôm nay: Ngày {day}",
+
         other: "Khác",
         footer_text: "VÍ TIỀN PIXEL • PHÁT TRIỂN DÀNH CHO QUẢN LÝ TÀI CHÍNH CÁ NHÂN ĐA TIỀN TỆ (EUR • USD • VNĐ) • 2026"
     },
@@ -529,6 +547,24 @@ const i18nData = {
         transfer_success: "Transferred between wallets successfully!",
         rates_synced: "Exchange rates synced online successfully!",
         sub_paid: "Subscription paid successfully!",
+
+        // Pixel Calendar Table Picker
+        cal_th_mon: "Mo",
+        cal_th_tue: "Tu",
+        cal_th_wed: "We",
+        cal_th_thu: "Th",
+        cal_th_fri: "Fr",
+        cal_th_sat: "Sa",
+        cal_th_sun: "Su",
+        cal_selected_day_label: "Day {day} every month",
+        cal_preset_start: "Start of month (1)",
+        cal_preset_10: "Day 10",
+        cal_preset_mid: "Mid month (15)",
+        cal_preset_20: "Day 20",
+        cal_preset_25: "Day 25",
+        cal_preset_end: "End of month (31)",
+        cal_click_hint: "Click any date in the calendar table to select the recurring billing day.",
+        cal_today_title: "Today: Day {day}",
 
         other: "Other",
         footer_text: "PIXEL MONEY • MULTI-CURRENCY PERSONAL FINANCE MANAGER (EUR • USD • VND) • 2026"
@@ -796,6 +832,24 @@ const i18nData = {
         rates_synced: "Wechselkurse online erfolgreich synchronisiert!",
         sub_paid: "Abonnement erfolgreich bezahlt!",
 
+        // Pixel Calendar Table Picker
+        cal_th_mon: "Mo",
+        cal_th_tue: "Di",
+        cal_th_wed: "Mi",
+        cal_th_thu: "Do",
+        cal_th_fri: "Fr",
+        cal_th_sat: "Sa",
+        cal_th_sun: "So",
+        cal_selected_day_label: "Tag {day} jeden Monat",
+        cal_preset_start: "Monatsanfang (1)",
+        cal_preset_10: "Tag 10",
+        cal_preset_mid: "Monatsmitte (15)",
+        cal_preset_20: "Tag 20",
+        cal_preset_25: "Tag 25",
+        cal_preset_end: "Monatsende (31)",
+        cal_click_hint: "Klicken Sie auf ein Datum in der Kalendertabelle, um den Abrechnungstag auszuwählen.",
+        cal_today_title: "Heute: Tag {day}",
+
         other: "Sonstiges",
         footer_text: "PIXEL GELD • MEHRWÄHRUNGS-FINANZVERWALTUNG (EUR • USD • VND) • 2026"
     }
@@ -922,6 +976,9 @@ function setLanguage(lang) {
     }
     if (typeof updateBudgetModalDisplay === 'function') {
         updateBudgetModalDisplay();
+    }
+    if (typeof renderSubCalendarTable === 'function') {
+        renderSubCalendarTable();
     }
 
     // Trigger dashboard refresh for dynamic strings & charts

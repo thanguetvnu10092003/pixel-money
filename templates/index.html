@@ -668,8 +668,68 @@
                 </select>
             </div>
             <div class="form-group">
-                <label data-i18n="label_sub_day">NGÀY ĐẾN HẠN HÀNG THÁNG (1 - 31):</label>
-                <input type="number" id="subDay" class="form-control" min="1" max="31" value="1" required>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <label data-i18n="label_sub_day" style="margin-bottom: 0;">NGÀY ĐẾN HẠN HÀNG THÁNG (1 - 31):</label>
+                    <span class="pixel-tag" id="subSelectedDayTag" style="background: rgba(0, 240, 255, 0.15); border: 1px solid var(--color-primary); color: var(--color-primary); font-size: 0.75rem; padding: 2px 8px; font-weight: bold;">
+                        📅 <span id="subSelectedDayText">Ngày 1 hàng tháng</span>
+                    </span>
+                </div>
+                <input type="hidden" id="subDay" value="1">
+                
+                <!-- Retro Pixel Calendar Table Container -->
+                <div class="pixel-calendar-card">
+                    <!-- Calendar Month Header & Nav -->
+                    <div class="pixel-cal-header">
+                        <button type="button" class="pixel-cal-nav-btn" onclick="navSubCalendarMonth(-1)">◀</button>
+                        <div class="pixel-cal-title" id="subCalMonthTitle">THÁNG 10 / 2026</div>
+                        <button type="button" class="pixel-cal-nav-btn" onclick="navSubCalendarMonth(1)">▶</button>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div class="pixel-cal-presets">
+                        <button type="button" class="pixel-preset-btn" data-preset-day="1" onclick="selectSubBillingDay(1)">
+                            ⚡ <span data-i18n="cal_preset_start">Đầu tháng (1)</span>
+                        </button>
+                        <button type="button" class="pixel-preset-btn" data-preset-day="10" onclick="selectSubBillingDay(10)">
+                            <span data-i18n="cal_preset_10">Ngày 10</span>
+                        </button>
+                        <button type="button" class="pixel-preset-btn" data-preset-day="15" onclick="selectSubBillingDay(15)">
+                            ⚡ <span data-i18n="cal_preset_mid">Giữa tháng (15)</span>
+                        </button>
+                        <button type="button" class="pixel-preset-btn" data-preset-day="20" onclick="selectSubBillingDay(20)">
+                            <span data-i18n="cal_preset_20">Ngày 20</span>
+                        </button>
+                        <button type="button" class="pixel-preset-btn" data-preset-day="25" onclick="selectSubBillingDay(25)">
+                            <span data-i18n="cal_preset_25">Ngày 25</span>
+                        </button>
+                        <button type="button" class="pixel-preset-btn" data-preset-day="31" onclick="selectSubBillingDay(31)">
+                            🏁 <span data-i18n="cal_preset_end">Cuối tháng (31)</span>
+                        </button>
+                    </div>
+
+                    <!-- Calendar Table -->
+                    <div class="pixel-cal-table-wrap">
+                        <table class="pixel-cal-table" id="subCalTable">
+                            <thead>
+                                <tr>
+                                    <th data-i18n="cal_th_mon">T2</th>
+                                    <th data-i18n="cal_th_tue">T3</th>
+                                    <th data-i18n="cal_th_wed">T4</th>
+                                    <th data-i18n="cal_th_thu">T5</th>
+                                    <th data-i18n="cal_th_fri">T6</th>
+                                    <th data-i18n="cal_th_sat" class="cal-weekend">T7</th>
+                                    <th data-i18n="cal_th_sun" class="cal-weekend">CN</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subCalTableBody">
+                                <!-- Populated dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pixel-cal-hint">
+                        💡 <span data-i18n="cal_click_hint">Nhấp vào một ngày trong bảng lịch để chọn ngày thanh toán định kỳ.</span>
+                    </div>
+                </div>
             </div>
             <div class="form-group">
                 <label data-i18n="label_category">DANH MỤC LIÊN QUAN:</label>
